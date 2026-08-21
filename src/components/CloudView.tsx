@@ -2,6 +2,7 @@ import { useCallback, useRef } from 'react'
 import type { PointerEvent as ReactPointerEvent } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { CardTile } from './CardTile'
+import { getSequence } from '../lib/timeline'
 import type { SimNode } from '../hooks/useCloudSimulation'
 import type { Card, CardStatus } from '../types'
 import type { CardPatch } from '../lib/dataStore'
@@ -16,10 +17,16 @@ interface Props {
   releasePin: (id: string) => void
   onPatch: (id: string, patch: CardPatch) => void
   onDelete: (id: string) => void
+  onOpen: (id: string) => void
   timelinePosition: (id: string) => string
   hoveredId: string | null
   onHover: (id: string | null) => void
 }
+
+// A pointer press only becomes a drag once it moves past this many pixels —
+// below that it's a click, which opens the card editor instead of pinning
+// the card in place.
+const DRAG_THRESHOLD = 4
 
 // Presentational: the d3-force simulation itself lives in BoardView (via
 // useCloudSimulation) so it survives this component unmounting when the
@@ -34,12 +41,13 @@ export function CloudView({
   releasePin,
   onPatch,
   onDelete,
+  onOpen,
   timelinePosition,
   hoveredId,
   onHover,
 }: Props) {
   const ref = useRef<HTMLDivElement | null>(null)
-  const draggingId = useRef<string | null>(null)
+  const pressRef = useRef<{ id: string; startX: number; startY: number; dragging: boolean } | null>(null)
 
   const toLocal = useCallback((e: ReactPointerEvent) => {
     const rect = ref.current?.getBoundingClientRect()
@@ -48,28 +56,56 @@ export function CloudView({
   }, [])
 
   const handlePointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
-    const id = draggingId.current
-    if (!id) return
+    const press = pressRef.current
+    if (!press) return
     const { x, y } = toLocal(e)
-    dragTo(id, x, y)
+    if (!press.dragging) {
+      const dx = e.clientX - press.startX
+      const dy = e.clientY - press.startY
+      if (Math.hypot(dx, dy) < DRAG_THRESHOLD) return
+      press.dragging = true
+      beginDrag(press.id, x, y)
+    }
+    dragTo(press.id, x, y)
   }
 
-  const handlePointerUp = (id: string) => {
-    if (draggingId.current !== id) return
-    draggingId.current = null
-    const pinned = endDrag(id)
-    if (pinned) onPatch(id, { fx: pinned.fx, fy: pinned.fy })
+  const finishPress = () => {
+    const press = pressRef.current
+    if (!press) return
+    pressRef.current = null
+    if (press.dragging) {
+      const pinned = endDrag(press.id)
+      if (pinned) onPatch(press.id, { fx: pinned.fx, fy: pinned.fy })
+    } else {
+      onOpen(press.id)
+    }
   }
 
   const hoveredPos = hoveredId ? positions.get(hoveredId) : null
+  const sequence = getSequence(cards)
+  const threadPoints = sequence
+    .map((c) => positions.get(c.id))
+    .filter((p): p is SimNode => Boolean(p))
 
   return (
     <div
       className="cloud-canvas"
       ref={ref}
       onPointerMove={handlePointerMove}
-      onPointerUp={() => draggingId.current && handlePointerUp(draggingId.current)}
+      onPointerUp={finishPress}
     >
+      {/* A faint thread through cards already placed in the timeline
+          sequence — a sense of connectedness without manual link UI. */}
+      {threadPoints.length > 1 && (
+        <svg className="cloud-thread" width={size.width} height={size.height}>
+          <polyline
+            points={threadPoints.map((p) => `${p.x},${p.y}`).join(' ')}
+            fill="none"
+            className="cloud-thread-line"
+          />
+        </svg>
+      )}
+
       {cards.map((card) => {
         const pos = positions.get(card.id)
         const x = pos?.x ?? size.width / 2
@@ -99,11 +135,9 @@ export function CloudView({
             dragProps={{
               onPointerDown: (e: ReactPointerEvent) => {
                 ;(e.target as Element).setPointerCapture?.(e.pointerId)
-                draggingId.current = card.id
-                const { x: lx, y: ly } = toLocal(e)
-                beginDrag(card.id, lx, ly)
+                pressRef.current = { id: card.id, startX: e.clientX, startY: e.clientY, dragging: false }
               },
-              onPointerUp: () => handlePointerUp(card.id),
+              onPointerUp: finishPress,
             }}
           />
         )

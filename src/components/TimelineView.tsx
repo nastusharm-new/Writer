@@ -29,6 +29,7 @@ interface Props {
   cards: Card[]
   onPatch: (id: string, patch: CardPatch) => void
   onDelete: (id: string) => void
+  onOpen: (id: string) => void
   hoveredId: string | null
   onHover: (id: string | null) => void
 }
@@ -49,12 +50,14 @@ function TimelineCard({
   card,
   onPatch,
   onDelete,
+  onOpen,
   hoveredId,
   onHover,
 }: {
   card: Card
   onPatch: (id: string, patch: CardPatch) => void
   onDelete: (id: string) => void
+  onOpen: (id: string) => void
   hoveredId: string | null
   onHover: (id: string | null) => void
 }) {
@@ -75,13 +78,14 @@ function TimelineCard({
       className={hoveredId === card.id ? 'is-hovered' : ''}
       onStatusChange={(status: CardStatus) => onPatch(card.id, { status })}
       onDelete={() => onDelete(card.id)}
+      onOpen={() => onOpen(card.id)}
       onHoverStart={() => onHover(card.id)}
       onHoverEnd={() => onHover(null)}
     />
   )
 }
 
-export function TimelineView({ cards, onPatch, onDelete, hoveredId, onHover }: Props) {
+export function TimelineView({ cards, onPatch, onDelete, onOpen, hoveredId, onHover }: Props) {
   const sequence = getSequence(cards)
   const unassigned = getUnassigned(cards)
   const [activeId, setActiveId] = useState<string | null>(null)
@@ -187,6 +191,7 @@ export function TimelineView({ cards, onPatch, onDelete, hoveredId, onHover }: P
                     card={card}
                     onPatch={onPatch}
                     onDelete={onDelete}
+                    onOpen={onOpen}
                     hoveredId={hoveredId}
                     onHover={onHover}
                   />
@@ -208,6 +213,7 @@ export function TimelineView({ cards, onPatch, onDelete, hoveredId, onHover }: P
                 card={card}
                 onPatch={onPatch}
                 onDelete={onDelete}
+                onOpen={onOpen}
                 hoveredId={hoveredId}
                 onHover={onHover}
               />

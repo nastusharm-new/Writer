@@ -3,11 +3,14 @@ import type { FormEvent } from 'react'
 
 interface Props {
   onAddCard: (text: string) => void
+  onSignOut: () => void
 }
 
 // Screen 5.1 — first run. No genre/template picker: the first thing the
-// author does is write something down, not configure a project.
-export function EmptyProjectScreen({ onAddCard }: Props) {
+// author does is write something down, not configure a project. Same
+// writing-surface typography as the full-page card editor, so the very
+// first thing you see already feels like the tool, not a form.
+export function EmptyProjectScreen({ onAddCard, onSignOut }: Props) {
   const [text, setText] = useState('')
 
   const submit = (e: FormEvent) => {
@@ -19,6 +22,9 @@ export function EmptyProjectScreen({ onAddCard }: Props) {
 
   return (
     <div className="empty-project">
+      <button type="button" className="empty-project-signout" onClick={onSignOut}>
+        Выйти
+      </button>
       <div className="empty-project-inner">
         <h1>Не думай о структуре.</h1>
         <h1>Просто выгрузи, что в голове.</h1>
@@ -28,7 +34,6 @@ export function EmptyProjectScreen({ onAddCard }: Props) {
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder="Мысль, сцена, факт, кусок диалога, шаг рецепта — что угодно…"
-            rows={4}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submit(e)
             }}

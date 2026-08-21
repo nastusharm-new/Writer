@@ -1,7 +1,7 @@
-import type { CSSProperties, ReactNode } from 'react'
+import type { CSSProperties } from 'react'
 import { motion } from 'framer-motion'
-import { MaturityDot } from './MaturityDot'
-import { CARD_STATUSES, STATUS_LABEL, type Card, type CardStatus } from '../types'
+import { StatusPicker } from './StatusPicker'
+import type { Card, CardStatus } from '../types'
 
 interface Props {
   card: Card
@@ -11,11 +11,11 @@ interface Props {
   setNodeRef?: (el: HTMLElement | null) => void
   onStatusChange: (status: CardStatus) => void
   onDelete: () => void
+  onOpen?: () => void
   onHoverStart?: () => void
   onHoverEnd?: () => void
   pinned?: boolean
   onReleasePin?: () => void
-  footerExtra?: ReactNode
 }
 
 /**
@@ -32,11 +32,11 @@ export function CardTile({
   setNodeRef,
   onStatusChange,
   onDelete,
+  onOpen,
   onHoverStart,
   onHoverEnd,
   pinned,
   onReleasePin,
-  footerExtra,
 }: Props) {
   return (
     <motion.div
@@ -47,37 +47,26 @@ export function CardTile({
       style={style}
       onHoverStart={onHoverStart}
       onHoverEnd={onHoverEnd}
+      onClick={onOpen}
       onDoubleClick={pinned ? onReleasePin : undefined}
       transition={{ type: 'spring', stiffness: 260, damping: 28 }}
       {...dragProps}
     >
-      <div className="card-tile-head">
-        <MaturityDot status={card.status} />
-        {pinned && (
-          <span className="pin-indicator" title="Закреплено — двойной клик, чтобы отпустить">
-            ●
-          </span>
-        )}
-      </div>
+      {pinned && (
+        <span className="pin-indicator" title="Закреплено — двойной клик, чтобы отпустить">
+          ●
+        </span>
+      )}
       <p className="card-tile-text">{card.text}</p>
       <div className="card-tile-footer">
-        <select
-          value={card.status}
-          onChange={(e) => onStatusChange(e.target.value as CardStatus)}
-          onPointerDown={(e) => e.stopPropagation()}
-          aria-label="Статус зрелости"
-        >
-          {CARD_STATUSES.map((s) => (
-            <option key={s} value={s}>
-              {STATUS_LABEL[s]}
-            </option>
-          ))}
-        </select>
-        {footerExtra}
+        <StatusPicker value={card.status} onChange={onStatusChange} size="compact" />
         <button
           type="button"
           className="card-tile-delete"
-          onClick={onDelete}
+          onClick={(e) => {
+            e.stopPropagation()
+            onDelete()
+          }}
           onPointerDown={(e) => e.stopPropagation()}
           aria-label="Удалить карточку"
         >

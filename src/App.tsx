@@ -28,7 +28,7 @@ function Workspace({ userId, onSignOut }: { userId: string; onSignOut: () => voi
   }
 
   if (cards.length === 0) {
-    return <EmptyProjectScreen onAddCard={addCard} />
+    return <EmptyProjectScreen onAddCard={addCard} onSignOut={onSignOut} />
   }
 
   return (
