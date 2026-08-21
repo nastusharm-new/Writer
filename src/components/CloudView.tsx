@@ -2,13 +2,18 @@ import { useCallback, useRef } from 'react'
 import type { PointerEvent as ReactPointerEvent } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { CardTile } from './CardTile'
-import { useCloudSimulation } from '../hooks/useCloudSimulation'
-import { useElementSize } from '../hooks/useElementSize'
+import type { SimNode } from '../hooks/useCloudSimulation'
 import type { Card, CardStatus } from '../types'
 import type { CardPatch } from '../lib/dataStore'
 
 interface Props {
   cards: Card[]
+  size: { width: number; height: number }
+  positions: Map<string, SimNode>
+  beginDrag: (id: string, x: number, y: number) => void
+  dragTo: (id: string, x: number, y: number) => void
+  endDrag: (id: string) => { fx: number; fy: number } | null
+  releasePin: (id: string) => void
   onPatch: (id: string, patch: CardPatch) => void
   onDelete: (id: string) => void
   timelinePosition: (id: string) => string
@@ -16,24 +21,31 @@ interface Props {
   onHover: (id: string | null) => void
 }
 
-export function CloudView({ cards, onPatch, onDelete, timelinePosition, hoveredId, onHover }: Props) {
-  const { ref, size } = useElementSize<HTMLDivElement>()
-  const { positions, beginDrag, dragTo, endDrag, releasePin } = useCloudSimulation({
-    cards,
-    width: size.width,
-    height: size.height,
-    active: true,
-  })
+// Presentational: the d3-force simulation itself lives in BoardView (via
+// useCloudSimulation) so it survives this component unmounting when the
+// author switches to the timeline and back — see BoardView.tsx.
+export function CloudView({
+  cards,
+  size,
+  positions,
+  beginDrag,
+  dragTo,
+  endDrag,
+  releasePin,
+  onPatch,
+  onDelete,
+  timelinePosition,
+  hoveredId,
+  onHover,
+}: Props) {
+  const ref = useRef<HTMLDivElement | null>(null)
   const draggingId = useRef<string | null>(null)
 
-  const toLocal = useCallback(
-    (e: ReactPointerEvent) => {
-      const rect = ref.current?.getBoundingClientRect()
-      if (!rect) return { x: 0, y: 0 }
-      return { x: e.clientX - rect.left, y: e.clientY - rect.top }
-    },
-    [ref],
-  )
+  const toLocal = useCallback((e: ReactPointerEvent) => {
+    const rect = ref.current?.getBoundingClientRect()
+    if (!rect) return { x: 0, y: 0 }
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top }
+  }, [])
 
   const handlePointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
     const id = draggingId.current

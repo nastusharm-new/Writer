@@ -1,10 +1,12 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { CloudView } from './CloudView'
 import { TimelineView } from './TimelineView'
 import { ViewSwitcher } from './ViewSwitcher'
 import { PreviewBar } from './PreviewBar'
 import { AddCardBar } from './AddCardBar'
 import { timelinePositionLabel } from '../lib/timeline'
+import { useCloudSimulation } from '../hooks/useCloudSimulation'
+import { useElementSize } from '../hooks/useElementSize'
 import type { Card, ViewMode } from '../types'
 import type { CardPatch } from '../lib/dataStore'
 
@@ -20,6 +22,21 @@ export function BoardView({ cards, addCard, patchCard, removeCard, onSignOut }: 
   const [mode, setMode] = useState<ViewMode>('cloud')
   const [hoveredId, setHoveredId] = useState<string | null>(null)
 
+  // The simulation lives here, above both views, so switching to the
+  // timeline and back doesn't reset it — cards keep the positions they had
+  // (per the brief: switching views is never a "recompute from scratch").
+  const { ref: bodyRef, size } = useElementSize<HTMLDivElement>()
+  const cloudSim = useCloudSimulation({ cards, width: size.width, height: size.height })
+
+  useEffect(() => {
+    if (mode === 'cloud') {
+      cloudSim.resume()
+    } else {
+      cloudSim.pause()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode])
+
   return (
     <div className="board">
       <header className="board-header">
@@ -30,10 +47,16 @@ export function BoardView({ cards, addCard, patchCard, removeCard, onSignOut }: 
         </button>
       </header>
 
-      <div className="board-body">
+      <div className="board-body" ref={bodyRef}>
         {mode === 'cloud' ? (
           <CloudView
             cards={cards}
+            size={size}
+            positions={cloudSim.positions}
+            beginDrag={cloudSim.beginDrag}
+            dragTo={cloudSim.dragTo}
+            endDrag={cloudSim.endDrag}
+            releasePin={cloudSim.releasePin}
             onPatch={patchCard}
             onDelete={removeCard}
             hoveredId={hoveredId}

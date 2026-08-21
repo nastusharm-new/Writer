@@ -21,16 +21,15 @@ export interface SimNode {
   fy?: number | null
 }
 
-export const CARD_RADIUS = 76 // collision radius; roughly half a card's footprint
+// Collision radius: cards are 152x108 rectangles, so a circle sized off the
+// half-width alone still lets corners overlap along the diagonal — pad it
+// toward the half-diagonal (~94) for breathing room between tiles.
+export const CARD_RADIUS = 92
 
 interface Options {
   cards: Card[]
   width: number
   height: number
-  // Cloud is the default view, but the simulation should keep existing node
-  // positions (not reset) whenever the caller isn't actively showing it —
-  // e.g. while the timeline view is on screen.
-  active: boolean
 }
 
 /**
@@ -50,12 +49,12 @@ export function useCloudSimulation({ cards, width, height }: Options) {
   // Create the simulation once.
   useEffect(() => {
     const sim = forceSimulation<SimNode>([])
-      .force('charge', forceManyBody().strength(-260))
-      .force('collide', forceCollide<SimNode>(CARD_RADIUS))
+      .force('charge', forceManyBody().strength(-340))
+      .force('collide', forceCollide<SimNode>(CARD_RADIUS).strength(1))
       .force('link', forceLink<SimNode, SimulationLinkDatum<SimNode>>([]).id((d) => d.id).distance(160))
-      .force('x', forceX<SimNode>(width / 2).strength(0.02))
-      .force('y', forceY<SimNode>(height / 2).strength(0.02))
-      .alphaDecay(0.02)
+      .force('x', forceX<SimNode>(width / 2).strength(0.015))
+      .force('y', forceY<SimNode>(height / 2).strength(0.015))
+      .alphaDecay(0.015)
       .on('tick', () => {
         setPositions(new Map(nodesRef.current.map((n) => [n.id, n])))
       })
