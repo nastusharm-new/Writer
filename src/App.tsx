@@ -2,7 +2,6 @@ import { useAuth } from './hooks/useAuth'
 import { useProjectTree } from './hooks/useProjectTree'
 import { useCards } from './hooks/useCards'
 import { AuthScreen } from './components/AuthScreen'
-import { EmptyProjectScreen } from './components/EmptyProjectScreen'
 import { BoardView } from './components/BoardView'
 import { Sidebar } from './components/Sidebar'
 
@@ -23,7 +22,6 @@ function App() {
 function Workspace({ userId, onSignOut }: { userId: string; onSignOut: () => void }) {
   const {
     tree,
-    projects,
     loading: treeLoading,
     activeProjectId,
     setActiveProjectId,
@@ -36,8 +34,6 @@ function Workspace({ userId, onSignOut }: { userId: string; onSignOut: () => voi
   if (treeLoading || !activeProjectId) {
     return <div className="app-loading">Загрузка…</div>
   }
-
-  const activeProject = projects.find((p) => p.id === activeProjectId) ?? null
 
   return (
     <div className="app-shell">
@@ -53,12 +49,9 @@ function Workspace({ userId, onSignOut }: { userId: string; onSignOut: () => voi
       <main className="app-main">
         {cardsLoading ? (
           <div className="app-loading">Загрузка…</div>
-        ) : cards.length === 0 ? (
-          <EmptyProjectScreen key={activeProjectId} onAddCard={addCard} />
         ) : (
           <BoardView
             key={activeProjectId}
-            projectTitle={activeProject?.title ?? ''}
             cards={cards}
             addCard={addCard}
             patchCard={patchCard}

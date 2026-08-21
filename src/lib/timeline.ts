@@ -23,3 +23,14 @@ export function timelinePositionLabel(cards: Card[], id: string): string {
   if (idx === -1) return 'пока вне сюжета'
   return `№${idx + 1} из ${sequence.length}`
 }
+
+const TAB_TITLE_MAX = 24
+
+// A tab's label is the start of the card's first line — there's no
+// separate title field, the same way an untitled document's tab shows a
+// preview of its content until you name it by writing something.
+export function cardTabTitle(text: string): string {
+  const firstLine = text.trim().split('\n')[0]?.trim()
+  if (!firstLine) return 'Без названия'
+  return firstLine.length > TAB_TITLE_MAX ? `${firstLine.slice(0, TAB_TITLE_MAX)}…` : firstLine
+}
