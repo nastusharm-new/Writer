@@ -39,25 +39,42 @@ export const supabaseStore: DataStore = {
     await client().auth.signOut()
   },
 
-  async ensureDefaultProject(userId: string) {
-    const db = client()
-    const { data: existing, error: selectError } = await db
+  async listProjects(userId: string) {
+    const { data, error } = await client()
       .from('projects')
       .select('*')
       .eq('user_id', userId)
       .order('id', { ascending: true })
-      .limit(1)
-      .maybeSingle()
-    if (selectError) throw selectError
-    if (existing) return existing as Project
+    if (error) throw error
+    return (data ?? []) as Project[]
+  },
 
-    const { data: created, error: insertError } = await db
+  async createProject(userId: string, title: string, parentId: string | null) {
+    const { data, error } = await client()
       .from('projects')
-      .insert({ user_id: userId, title: 'Черновик' })
+      .insert({ user_id: userId, title, parent_id: parentId })
       .select()
       .single()
-    if (insertError) throw insertError
-    return created as Project
+    if (error) throw error
+    return data as Project
+  },
+
+  async renameProject(id: string, title: string) {
+    const { data, error } = await client()
+      .from('projects')
+      .update({ title })
+      .eq('id', id)
+      .select()
+      .single()
+    if (error) throw error
+    return data as Project
+  },
+
+  async deleteProject(id: string) {
+    // ON DELETE CASCADE on projects.parent_id and cards.project_id handles
+    // descendant projects and their cards server-side.
+    const { error } = await client().from('projects').delete().eq('id', id)
+    if (error) throw error
   },
 
   async listCards(projectId: string) {

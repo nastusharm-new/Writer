@@ -5,14 +5,16 @@ interface Props {
   onChange: (mode: ViewMode) => void
 }
 
+// Reads as a small tab strip — Облако and Таймлайн are two views onto the
+// same project's cards, switchable without losing either one's state.
 export function ViewSwitcher({ mode, onChange }: Props) {
   return (
-    <div className="view-switcher" role="tablist" aria-label="Вид">
+    <div className="tab-strip" role="tablist" aria-label="Вид">
       <button
         type="button"
         role="tab"
         aria-selected={mode === 'cloud'}
-        className={mode === 'cloud' ? 'is-active' : ''}
+        className={`tab ${mode === 'cloud' ? 'is-active' : ''}`}
         onClick={() => onChange('cloud')}
       >
         Облако
@@ -21,7 +23,7 @@ export function ViewSwitcher({ mode, onChange }: Props) {
         type="button"
         role="tab"
         aria-selected={mode === 'timeline'}
-        className={mode === 'timeline' ? 'is-active' : ''}
+        className={`tab ${mode === 'timeline' ? 'is-active' : ''}`}
         onClick={() => onChange('timeline')}
       >
         Таймлайн

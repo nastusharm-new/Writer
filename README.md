@@ -2,11 +2,13 @@
 
 Инструмент для организации разрозненных идей и черновиков: карточки-фрагменты,
 которые можно копить без давления немедленной структуры, и просматривать в
-разных "видах" одних и тех же данных — облако и таймлайн.
+разных "видах" одних и тех же данных — облако и таймлайн. Слева — дерево
+проектов (Obsidian-style): части, главы, сцены — произвольной вложенности,
+каждый узел дерева — самостоятельный проект со своим облаком и таймлайном.
 
 Это MVP по брифу (см. `BRIEF.md`, если сохранён в репозитории/задаче) — auth,
 CRUD карточек, облако на d3-force, таймлайн, анимированное переключение
-между видами.
+между видами, полноэкранный редактор карточки, дерево проектов в сайдбаре.
 
 ## Стек
 
@@ -14,6 +16,7 @@ CRUD карточек, облако на d3-force, таймлайн, аними�
 - `d3-force` — force-directed layout облака
 - `dnd-kit` — drag & drop в таймлайне (ручной порядок карточек)
 - `framer-motion` — анимация переключения между видами (`layout`/`layoutId`)
+  и полноэкранного редактора карточки
 - Supabase (Postgres + Auth) — бэкенд
 - Vercel — хостинг (деплой как обычное Vite-приложение)
 
@@ -32,7 +35,9 @@ npm run dev
 ### Подключение Supabase
 
 1. Создайте проект в Supabase, примените схему из `supabase/schema.sql`
-   (SQL Editor → вставить и выполнить).
+   (SQL Editor → вставить и выполнить). Если проект уже существовал до
+   появления дерева проектов — примените ещё и
+   `supabase/migrations/002_project_hierarchy.sql` (добавляет `parent_id`).
 2. Скопируйте `.env.example` в `.env.local` и заполните
    `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` (Project Settings → API).
 3. В Supabase Auth включите Email OTP / magic link (по умолчанию включено).
@@ -40,7 +45,8 @@ npm run dev
 
 ## Модель данных
 
-См. `supabase/schema.sql`. Таблицы: `projects`, `cards`, `card_links`
+См. `supabase/schema.sql`. Таблицы: `projects` (само-ссылающаяся через
+`parent_id` — дерево произвольной глубины), `cards`, `card_links`
 (база под ручные связи заложена, но UI для них в MVP не реализован — вне
 скоупа первой итерации).
 
@@ -56,15 +62,17 @@ src/
     localStore.ts         — реализация поверх localStorage (дев-режим)
     timeline.ts           — сортировка карточек для таймлайна
   hooks/
-    useAuth.ts, useProject.ts, useCards.ts
+    useAuth.ts, useCards.ts
+    useProjectTree.ts      — дерево проектов + какой проект сейчас открыт
     useCloudSimulation.ts — обёртка над d3-force для облака
     useElementSize.ts
   components/
     AuthScreen, EmptyProjectScreen  — экраны 5.1
+    Sidebar, ProjectTreeItem        — дерево проектов слева
     CloudView                      — облако, экран 5.2
     TimelineView                   — таймлайн, экран 5.3
-    BoardView, ViewSwitcher, PreviewBar — переключение видов, экран 5.4
-    CardTile, MaturityDot, AddCardBar
+    BoardView, ViewSwitcher (вкладки), PreviewBar — экран 5.4
+    CardTile, StatusPicker, CardEditor — карточка и полноэкранный редактор
 ```
 
 ## Ключевые технические решения

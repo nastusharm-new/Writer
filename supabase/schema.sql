@@ -11,10 +11,15 @@ create type card_status as enum ('spark', 'draft', 'rough', 'done');
 create table projects (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users (id) on delete cascade,
-  title text not null default 'Черновик'
+  title text not null default 'Черновик',
+  -- Self-referencing: lets a project nest arbitrarily deep in the sidebar
+  -- (part -> chapter -> scene, or however deep the author wants). Null is
+  -- a root-level project.
+  parent_id uuid references projects (id) on delete cascade
 );
 
 create index projects_user_id_idx on projects (user_id);
+create index projects_parent_id_idx on projects (parent_id);
 
 alter table projects enable row level security;
 

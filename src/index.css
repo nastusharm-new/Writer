@@ -205,75 +205,214 @@ select {
   cursor: default;
 }
 
-.empty-project-signout {
-  position: absolute;
-  top: 16px;
-  right: 20px;
+/* ---------- App shell: sidebar + main pane ---------- */
+
+.app-shell {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
+.sidebar {
+  width: 240px;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  background: var(--canvas-bg);
+  border-right: 1px solid var(--border);
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 12px 10px 16px;
+}
+
+.sidebar-title {
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.sidebar-add-root {
+  border: none;
+  background: none;
+  color: var(--text);
+  opacity: 0.6;
+  font-size: 16px;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+}
+
+.sidebar-add-root:hover {
+  opacity: 1;
+  background: var(--accent-bg);
+}
+
+.sidebar-tree {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0 12px;
+}
+
+.sidebar-footer {
+  padding: 10px 16px;
+  border-top: 1px solid var(--border);
+}
+
+.sidebar-signout {
   background: none;
   border: none;
   color: var(--text);
-  opacity: 0.5;
+  opacity: 0.55;
   font-size: 13px;
 }
 
-.empty-project-signout:hover {
+.sidebar-signout:hover {
   opacity: 1;
 }
 
-/* ---------- Board shell ---------- */
+/* ---------- Project tree ---------- */
+
+.tree-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-right: 8px;
+  height: 30px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--text);
+}
+
+.tree-row:hover {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.tree-row.is-active {
+  background: var(--accent-bg);
+  color: var(--text-h);
+}
+
+.tree-toggle {
+  width: 16px;
+  flex: none;
+  border: none;
+  background: none;
+  color: var(--text);
+  opacity: 0.6;
+  font-size: 10px;
+  padding: 0;
+}
+
+.tree-toggle.is-empty {
+  cursor: default;
+}
+
+.tree-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13.5px;
+}
+
+.tree-rename-input {
+  flex: 1;
+  min-width: 0;
+  font-size: 13.5px;
+  border: 1px solid var(--accent-border);
+  border-radius: 4px;
+  padding: 1px 5px;
+  background: var(--card-bg);
+  color: var(--text-h);
+}
+
+.tree-row-actions {
+  display: none;
+  align-items: center;
+  gap: 2px;
+  flex: none;
+}
+
+.tree-row:hover .tree-row-actions {
+  display: flex;
+}
+
+.tree-action {
+  border: none;
+  background: none;
+  color: var(--text);
+  opacity: 0.5;
+  font-size: 12px;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  line-height: 1;
+}
+
+.tree-action:hover {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.tree-action-delete:hover {
+  color: #e05252;
+}
+
+/* ---------- Main pane ---------- */
+
+.app-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
 
 .board {
   flex: 1;
   display: flex;
   flex-direction: column;
-  min-height: 100svh;
+  min-height: 0;
 }
 
-.board-header {
+.pane-header {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 12px 20px;
+  padding: 10px 20px;
   border-bottom: 1px solid var(--border);
 }
 
-.board-title {
+.pane-title {
   font-weight: 600;
   color: var(--text-h);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.board-signout {
+.tab-strip {
   margin-left: auto;
-  background: none;
-  border: none;
-  color: var(--text);
-  opacity: 0.6;
-}
-
-.board-signout:hover {
-  opacity: 1;
-}
-
-.view-switcher {
   display: inline-flex;
-  background: var(--canvas-bg);
-  border-radius: 999px;
-  padding: 3px;
   gap: 2px;
 }
 
-.view-switcher button {
+.tab-strip .tab {
   border: none;
+  border-bottom: 2px solid transparent;
   background: none;
-  padding: 6px 16px;
-  border-radius: 999px;
+  padding: 6px 14px;
   color: var(--text);
+  font-size: 14px;
 }
 
-.view-switcher button.is-active {
-  background: var(--card-bg);
+.tab-strip .tab.is-active {
   color: var(--text-h);
-  box-shadow: var(--shadow);
+  border-bottom-color: var(--accent);
+  font-weight: 500;
 }
 
 .board-body {

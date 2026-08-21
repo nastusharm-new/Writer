@@ -53,13 +53,55 @@ export const localStore: DataStore = {
     listeners.forEach((cb) => cb(null))
   },
 
-  async ensureDefaultProject(userId: string) {
+  async listProjects(userId: string) {
     const projects = read<Project[]>(LS_PROJECTS, [])
-    const existing = projects.find((p) => p.user_id === userId)
-    if (existing) return existing
-    const project: Project = { id: uuid(), user_id: userId, title: 'Черновик' }
+    return projects.filter((p) => p.user_id === userId)
+  },
+
+  async createProject(userId: string, title: string, parentId: string | null) {
+    const projects = read<Project[]>(LS_PROJECTS, [])
+    const project: Project = { id: uuid(), user_id: userId, title, parent_id: parentId }
     write(LS_PROJECTS, [...projects, project])
     return project
+  },
+
+  async renameProject(id: string, title: string) {
+    const projects = read<Project[]>(LS_PROJECTS, [])
+    let updated: Project | undefined
+    const next = projects.map((p) => {
+      if (p.id !== id) return p
+      updated = { ...p, title }
+      return updated
+    })
+    write(LS_PROJECTS, next)
+    if (!updated) throw new Error('project not found')
+    return updated
+  },
+
+  async deleteProject(id: string) {
+    // Mirrors the DB's ON DELETE CASCADE: drop the project, its descendant
+    // projects (any depth), and their cards.
+    const projects = read<Project[]>(LS_PROJECTS, [])
+    const toDelete = new Set<string>([id])
+    let grew = true
+    while (grew) {
+      grew = false
+      for (const p of projects) {
+        if (p.parent_id && toDelete.has(p.parent_id) && !toDelete.has(p.id)) {
+          toDelete.add(p.id)
+          grew = true
+        }
+      }
+    }
+    write(
+      LS_PROJECTS,
+      projects.filter((p) => !toDelete.has(p.id)),
+    )
+    const cards = read<Card[]>(LS_CARDS, [])
+    write(
+      LS_CARDS,
+      cards.filter((c) => !toDelete.has(c.project_id)),
+    )
   },
 
   async listCards(projectId: string) {

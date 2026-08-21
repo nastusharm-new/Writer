@@ -24,7 +24,10 @@ export interface DataStore {
   signInWithEmail(email: string): Promise<{ requiresConfirmation: boolean }>
   signOut(): Promise<void>
 
-  ensureDefaultProject(userId: string): Promise<Project>
+  listProjects(userId: string): Promise<Project[]>
+  createProject(userId: string, title: string, parentId: string | null): Promise<Project>
+  renameProject(id: string, title: string): Promise<Project>
+  deleteProject(id: string): Promise<void>
 
   listCards(projectId: string): Promise<Card[]>
   createCard(projectId: string, text: string, status: CardStatus): Promise<Card>

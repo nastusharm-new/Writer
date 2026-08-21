@@ -12,14 +12,14 @@ import type { Card, CardStatus, ViewMode } from '../types'
 import type { CardPatch } from '../lib/dataStore'
 
 interface Props {
+  projectTitle: string
   cards: Card[]
   addCard: (text: string, status?: CardStatus) => Promise<Card | undefined>
   patchCard: (id: string, patch: CardPatch) => void
   removeCard: (id: string) => void
-  onSignOut: () => void
 }
 
-export function BoardView({ cards, addCard, patchCard, removeCard, onSignOut }: Props) {
+export function BoardView({ projectTitle, cards, addCard, patchCard, removeCard }: Props) {
   const [mode, setMode] = useState<ViewMode>('cloud')
   const [hoveredId, setHoveredId] = useState<string | null>(null)
   // null = editor closed, 'new' = composing a fresh card, otherwise the id
@@ -45,13 +45,10 @@ export function BoardView({ cards, addCard, patchCard, removeCard, onSignOut }: 
 
   return (
     <div className="board">
-      <header className="board-header">
-        <span className="board-title">Draft</span>
+      <div className="pane-header">
+        <span className="pane-title">{projectTitle}</span>
         <ViewSwitcher mode={mode} onChange={setMode} />
-        <button type="button" className="board-signout" onClick={onSignOut}>
-          Выйти
-        </button>
-      </header>
+      </div>
 
       <div className="board-body" ref={bodyRef}>
         {mode === 'cloud' ? (

@@ -22,6 +22,10 @@ export interface Project {
   id: string
   user_id: string
   title: string
+  // Self-referencing: lets a project be nested arbitrarily deep in the
+  // sidebar (a "часть" inside a "роман", a "сцена" inside that "часть", and
+  // so on) — null means it's a root-level project.
+  parent_id: string | null
 }
 
 export interface Card {
