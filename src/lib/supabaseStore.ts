@@ -87,6 +87,17 @@ export const supabaseStore: DataStore = {
     return (data ?? []) as Card[]
   },
 
+  async listCardsForUser(userId: string) {
+    // Inner-join on projects purely to filter by ownership; RLS already
+    // guarantees isolation, this just avoids an N-query fan-out per project.
+    const { data, error } = await client()
+      .from('cards')
+      .select('id, project_id, text, status, created_at, manual_order, fx, fy, projects!inner(user_id)')
+      .eq('projects.user_id', userId)
+    if (error) throw error
+    return (data ?? []).map(({ projects: _projects, ...card }) => card) as Card[]
+  },
+
   async createCard(projectId: string, text: string, status: CardStatus) {
     const { data, error } = await client()
       .from('cards')

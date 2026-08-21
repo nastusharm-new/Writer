@@ -15,6 +15,11 @@ interface Props {
   addCard: (text: string, status?: CardStatus) => Promise<Card | undefined>
   patchCard: (id: string, patch: CardPatch) => void
   removeCard: (id: string) => void
+  // Set when a card was clicked in the sidebar tree — opens/focuses that
+  // card's tab, whether or not it was already open.
+  initialOpenCardId?: string | null
+  onConsumedInitialCard?: () => void
+  onActiveCardChange?: (id: string | null) => void
 }
 
 interface OpenTab {
@@ -26,7 +31,15 @@ function makeTempKey() {
   return `new-${Math.random().toString(36).slice(2)}`
 }
 
-export function BoardView({ cards, addCard, patchCard, removeCard }: Props) {
+export function BoardView({
+  cards,
+  addCard,
+  patchCard,
+  removeCard,
+  initialOpenCardId,
+  onConsumedInitialCard,
+  onActiveCardChange,
+}: Props) {
   const [openTabs, setOpenTabs] = useState<OpenTab[]>(() =>
     cards.length === 0 ? [{ key: makeTempKey(), cardId: null }] : [],
   )
@@ -58,6 +71,17 @@ export function BoardView({ cards, addCard, patchCard, removeCard }: Props) {
     setActiveKey(cardId)
   }
 
+  // A card clicked in the sidebar tree — for the currently active project,
+  // or one just switched to (this instance freshly mounted for it).
+  useEffect(() => {
+    if (!initialOpenCardId) return
+    if (cards.some((c) => c.id === initialOpenCardId)) {
+      openCardTab(initialOpenCardId)
+    }
+    onConsumedInitialCard?.()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialOpenCardId])
+
   const openNewTab = () => {
     const key = makeTempKey()
     setOpenTabs((prev) => [...prev, { key, cardId: null }])
@@ -87,6 +111,11 @@ export function BoardView({ cards, addCard, patchCard, removeCard }: Props) {
 
   const activeTab = openTabs.find((t) => t.key === activeKey)
   const activeCard = activeTab?.cardId ? cards.find((c) => c.id === activeTab.cardId) ?? null : null
+
+  useEffect(() => {
+    onActiveCardChange?.(activeTab?.cardId ?? null)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab?.cardId])
 
   return (
     <div className="board">

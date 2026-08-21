@@ -111,6 +111,13 @@ export const localStore: DataStore = {
       .sort((a, b) => a.created_at.localeCompare(b.created_at))
   },
 
+  async listCardsForUser(userId: string) {
+    const projects = read<Project[]>(LS_PROJECTS, [])
+    const ownIds = new Set(projects.filter((p) => p.user_id === userId).map((p) => p.id))
+    const cards = read<Card[]>(LS_CARDS, [])
+    return cards.filter((c) => ownIds.has(c.project_id))
+  },
+
   async createCard(projectId: string, text: string, status: CardStatus) {
     const cards = read<Card[]>(LS_CARDS, [])
     const card: Card = {

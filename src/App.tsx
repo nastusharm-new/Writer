@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { useAuth } from './hooks/useAuth'
 import { useProjectTree } from './hooks/useProjectTree'
 import { useCards } from './hooks/useCards'
+import { useAllCards } from './hooks/useAllCards'
 import { AuthScreen } from './components/AuthScreen'
 import { BoardView } from './components/BoardView'
 import { Sidebar } from './components/Sidebar'
@@ -30,9 +32,20 @@ function Workspace({ userId, onSignOut }: { userId: string; onSignOut: () => voi
     deleteProject,
   } = useProjectTree(userId)
   const { cards, loading: cardsLoading, addCard, patchCard, removeCard } = useCards(activeProjectId ?? undefined)
+  const cardsByProject = useAllCards(userId, activeProjectId, cards)
+
+  // A card clicked in the sidebar tree, waiting to be opened as a tab once
+  // its project is the active one (see BoardView's initialOpenCardId).
+  const [pendingCardId, setPendingCardId] = useState<string | null>(null)
+  const [activeCardId, setActiveCardId] = useState<string | null>(null)
 
   if (treeLoading || !activeProjectId) {
     return <div className="app-loading">Загрузка…</div>
+  }
+
+  const handleSelectCard = (projectId: string, cardId: string) => {
+    if (projectId !== activeProjectId) setActiveProjectId(projectId)
+    setPendingCardId(cardId)
   }
 
   return (
@@ -40,7 +53,10 @@ function Workspace({ userId, onSignOut }: { userId: string; onSignOut: () => voi
       <Sidebar
         tree={tree}
         activeProjectId={activeProjectId}
+        cardsByProject={cardsByProject}
+        activeCardId={activeCardId}
         onSelect={setActiveProjectId}
+        onSelectCard={handleSelectCard}
         onAddChild={(parentId) => addProject(parentId, 'Без названия')}
         onRename={renameProject}
         onDelete={deleteProject}
@@ -56,6 +72,9 @@ function Workspace({ userId, onSignOut }: { userId: string; onSignOut: () => voi
             addCard={addCard}
             patchCard={patchCard}
             removeCard={removeCard}
+            initialOpenCardId={pendingCardId}
+            onConsumedInitialCard={() => setPendingCardId(null)}
+            onActiveCardChange={setActiveCardId}
           />
         )}
       </main>

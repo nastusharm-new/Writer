@@ -2,24 +2,41 @@ import { useCallback, useEffect, useState } from 'react'
 import { dataStore, type CardPatch } from '../lib/dataStore'
 import type { Card, CardStatus } from '../types'
 
+interface Loaded {
+  projectId: string | undefined
+  cards: Card[]
+}
+
 export function useCards(projectId: string | undefined) {
-  const [cards, setCards] = useState<Card[]>([])
-  const [loading, setLoading] = useState(true)
+  // Tracks which project the held `cards` actually belong to. Without this,
+  // switching projects has a render where `projectId` already points at the
+  // new project but the effect below hasn't fired yet — callers would
+  // briefly see the *previous* project's cards under the new project's id.
+  const [loaded, setLoaded] = useState<Loaded>({ projectId: undefined, cards: [] })
+  const [fetching, setFetching] = useState(true)
 
   useEffect(() => {
     if (!projectId) return
     let cancelled = false
-    setLoading(true)
+    setFetching(true)
     dataStore.listCards(projectId).then((list) => {
       if (!cancelled) {
-        setCards(list)
-        setLoading(false)
+        setLoaded({ projectId, cards: list })
+        setFetching(false)
       }
     })
     return () => {
       cancelled = true
     }
   }, [projectId])
+
+  const stale = loaded.projectId !== projectId
+  const cards = stale ? [] : loaded.cards
+  const loading = stale || fetching
+
+  const setCards = useCallback((updater: (prev: Card[]) => Card[]) => {
+    setLoaded((prev) => ({ ...prev, cards: updater(prev.cards) }))
+  }, [])
 
   const addCard = useCallback(
     async (text: string, status: CardStatus = 'spark') => {
@@ -28,28 +45,34 @@ export function useCards(projectId: string | undefined) {
       setCards((prev) => [...prev, card])
       return card
     },
-    [projectId],
+    [projectId, setCards],
   )
 
-  const patchCard = useCallback(async (id: string, patch: CardPatch) => {
-    // Optimistic update so dragging feels instant.
-    setCards((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)))
-    try {
-      const updated = await dataStore.updateCard(id, patch)
-      setCards((prev) => prev.map((c) => (c.id === id ? updated : c)))
-    } catch (err) {
-      console.error('Failed to update card', err)
-    }
-  }, [])
+  const patchCard = useCallback(
+    async (id: string, patch: CardPatch) => {
+      // Optimistic update so dragging feels instant.
+      setCards((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)))
+      try {
+        const updated = await dataStore.updateCard(id, patch)
+        setCards((prev) => prev.map((c) => (c.id === id ? updated : c)))
+      } catch (err) {
+        console.error('Failed to update card', err)
+      }
+    },
+    [setCards],
+  )
 
-  const removeCard = useCallback(async (id: string) => {
-    setCards((prev) => prev.filter((c) => c.id !== id))
-    try {
-      await dataStore.deleteCard(id)
-    } catch (err) {
-      console.error('Failed to delete card', err)
-    }
-  }, [])
+  const removeCard = useCallback(
+    async (id: string) => {
+      setCards((prev) => prev.filter((c) => c.id !== id))
+      try {
+        await dataStore.deleteCard(id)
+      } catch (err) {
+        console.error('Failed to delete card', err)
+      }
+    },
+    [setCards],
+  )
 
   return { cards, loading, addCard, patchCard, removeCard }
 }

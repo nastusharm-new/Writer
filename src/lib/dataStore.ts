@@ -30,6 +30,9 @@ export interface DataStore {
   deleteProject(id: string): Promise<void>
 
   listCards(projectId: string): Promise<Card[]>
+  // Every card across every one of the user's projects, for showing cards
+  // as clickable leaves in the sidebar tree without a per-project fetch.
+  listCardsForUser(userId: string): Promise<Card[]>
   createCard(projectId: string, text: string, status: CardStatus): Promise<Card>
   updateCard(id: string, patch: CardPatch): Promise<Card>
   deleteCard(id: string): Promise<void>

@@ -312,6 +312,22 @@ select {
   color: var(--text-h);
 }
 
+.tree-row--card {
+  width: 100%;
+  border: none;
+  background: none;
+  font: inherit;
+  text-align: left;
+}
+
+.tree-card-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+  margin-right: 2px;
+}
+
 .tree-toggle {
   width: 16px;
   flex: none;

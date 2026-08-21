@@ -1,14 +1,20 @@
 import { useState } from 'react'
 import type { KeyboardEvent } from 'react'
 import type { ProjectTreeNode } from '../hooks/useProjectTree'
+import { cardTabTitle } from '../lib/timeline'
+import { STATUS_COLOR } from '../types'
+import type { Card } from '../types'
 
 interface Props {
   node: ProjectTreeNode
   depth: number
   activeId: string | null
+  cardsByProject: Map<string, Card[]>
+  activeCardId: string | null
   expanded: Set<string>
   onToggle: (id: string) => void
   onSelect: (id: string) => void
+  onSelectCard: (projectId: string, cardId: string) => void
   onAddChild: (parentId: string) => void
   onRename: (id: string, title: string) => void
   onDelete: (id: string) => void
@@ -16,20 +22,25 @@ interface Props {
 
 // One row in the sidebar's project tree, rendering its own children —
 // depth is unbounded, matching "part -> chapter -> scene -> ..." nesting.
+// Below its sub-projects, it also lists its own cards as clickable leaves.
 export function ProjectTreeItem({
   node,
   depth,
   activeId,
+  cardsByProject,
+  activeCardId,
   expanded,
   onToggle,
   onSelect,
+  onSelectCard,
   onAddChild,
   onRename,
   onDelete,
 }: Props) {
   const [editing, setEditing] = useState(false)
   const [draftTitle, setDraftTitle] = useState(node.project.title)
-  const hasChildren = node.children.length > 0
+  const cards = cardsByProject.get(node.project.id) ?? []
+  const hasExpandable = node.children.length > 0 || cards.length > 0
   const isOpen = expanded.has(node.project.id)
   const isActive = activeId === node.project.id
 
@@ -60,15 +71,15 @@ export function ProjectTreeItem({
       >
         <button
           type="button"
-          className={`tree-toggle ${hasChildren ? '' : 'is-empty'}`}
+          className={`tree-toggle ${hasExpandable ? '' : 'is-empty'}`}
           onClick={(e) => {
             e.stopPropagation()
-            if (hasChildren) onToggle(node.project.id)
+            if (hasExpandable) onToggle(node.project.id)
           }}
-          tabIndex={hasChildren ? 0 : -1}
+          tabIndex={hasExpandable ? 0 : -1}
           aria-label={isOpen ? 'Свернуть' : 'Развернуть'}
         >
-          {hasChildren ? (isOpen ? '▾' : '▸') : ''}
+          {hasExpandable ? (isOpen ? '▾' : '▸') : ''}
         </button>
 
         {editing ? (
@@ -122,7 +133,7 @@ export function ProjectTreeItem({
         </span>
       </div>
 
-      {hasChildren && isOpen && (
+      {hasExpandable && isOpen && (
         <div className="tree-children">
           {node.children.map((child) => (
             <ProjectTreeItem
@@ -130,13 +141,30 @@ export function ProjectTreeItem({
               node={child}
               depth={depth + 1}
               activeId={activeId}
+              cardsByProject={cardsByProject}
+              activeCardId={activeCardId}
               expanded={expanded}
               onToggle={onToggle}
               onSelect={onSelect}
+              onSelectCard={onSelectCard}
               onAddChild={onAddChild}
               onRename={onRename}
               onDelete={onDelete}
             />
+          ))}
+
+          {cards.map((card) => (
+            <button
+              key={card.id}
+              type="button"
+              className={`tree-row tree-row--card ${activeCardId === card.id ? 'is-active' : ''}`}
+              style={{ paddingLeft: 8 + (depth + 1) * 16 }}
+              onClick={() => onSelectCard(node.project.id, card.id)}
+            >
+              <span className="tree-toggle is-empty" />
+              <span className="tree-card-dot" style={{ background: STATUS_COLOR[card.status] }} />
+              <span className="tree-label">{cardTabTitle(card.text)}</span>
+            </button>
           ))}
         </div>
       )}
