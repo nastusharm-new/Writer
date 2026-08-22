@@ -1,22 +1,34 @@
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fdfcfa;
-  --canvas-bg: #f6f4ef;
-  --border: #e5e4e7;
-  --card-bg: #ffffff;
-  --card-border: #eae7e0;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --shadow: rgba(20, 15, 30, 0.08) 0 6px 20px -6px, rgba(20, 15, 30, 0.06) 0 2px 6px -2px;
-  --shadow-lift: rgba(20, 15, 30, 0.18) 0 14px 30px -10px;
+  /* Ink & newsprint, not app chrome: a warm paper ground, near-black ink
+     for headlines, a warm (not cool) gray for running text, and a deep
+     oxblood red standing in for "accent" — the color of a masthead rule or
+     a rubber stamp, not a UI brand color. */
+  --text: #6b6154;
+  --text-h: #100d09;
+  --bg: #fbf8f1;
+  --canvas-bg: #f3efe3;
+  --border: #ddd6c4;
+  --card-bg: #fffdf7;
+  --card-border: #d8cfb8;
+  --accent: #8c2f2f;
+  --accent-bg: rgba(140, 47, 47, 0.08);
+  --accent-border: rgba(140, 47, 47, 0.45);
+  --shadow: rgba(30, 20, 10, 0.1) 0 6px 20px -6px, rgba(30, 20, 10, 0.08) 0 2px 6px -2px;
+  --shadow-lift: rgba(30, 20, 10, 0.22) 0 14px 30px -10px;
+  /* A hard, slightly offset shadow reads as a clipped or stacked piece of
+     paper rather than a floating app card. */
+  --shadow-print: 3px 3px 0 rgba(16, 13, 9, 0.08);
+  --shadow-print-lift: 4px 4px 0 rgba(16, 13, 9, 0.14);
 
   --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --serif: Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', serif;
+  /* Display: a masthead/headline serif — the sidebar nameplate, tabs,
+     titles, section labels. Body: a warmer book-text serif for everything
+     else, running text included. */
+  --font-display: 'Playfair Display', Georgia, 'Iowan Old Style', serif;
+  --serif: 'Lora', Georgia, 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', serif;
   --mono: ui-monospace, Consolas, monospace;
 
-  font: 16px/145% var(--sans);
+  font: 16px/145% var(--serif);
   letter-spacing: 0.1px;
   color-scheme: light dark;
   color: var(--text);
@@ -29,18 +41,20 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #121319;
-    --canvas-bg: #191a22;
-    --border: #2e303a;
-    --card-bg: #1f212b;
-    --card-border: #33353f;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
+    --text: #b3aa98;
+    --text-h: #f4f0e6;
+    --bg: #17140f;
+    --canvas-bg: #1d1a14;
+    --border: #3a352a;
+    --card-bg: #221e17;
+    --card-border: #423c2e;
+    --accent: #e08a8a;
+    --accent-bg: rgba(224, 138, 138, 0.14);
+    --accent-border: rgba(224, 138, 138, 0.45);
     --shadow: rgba(0, 0, 0, 0.4) 0 6px 20px -6px, rgba(0, 0, 0, 0.3) 0 2px 6px -2px;
     --shadow-lift: rgba(0, 0, 0, 0.5) 0 14px 30px -10px;
+    --shadow-print: 3px 3px 0 rgba(0, 0, 0, 0.35);
+    --shadow-print-lift: 4px 4px 0 rgba(0, 0, 0, 0.45);
   }
 }
 
@@ -59,11 +73,11 @@ body {
 }
 
 h1 {
-  font-family: var(--sans);
-  font-weight: 500;
+  font-family: var(--font-display);
+  font-weight: 700;
   color: var(--text-h);
   font-size: 34px;
-  letter-spacing: -0.6px;
+  letter-spacing: -0.3px;
   margin: 0 0 6px;
 }
 
@@ -107,23 +121,28 @@ select {
 }
 
 .auth-card h1 {
-  font-size: 40px;
+  font-size: 44px;
+  font-style: italic;
 }
 
 .auth-subtitle {
   margin-bottom: 24px;
   color: var(--text);
+  font-style: italic;
 }
 
 .auth-card form {
   display: flex;
   gap: 8px;
+  border-top: 1px solid var(--text-h);
+  border-bottom: 3px solid var(--text-h);
+  padding: 14px 0;
 }
 
 .auth-card input {
   flex: 1;
   padding: 10px 14px;
-  border-radius: 10px;
+  border-radius: 2px;
   border: 1px solid var(--border);
   background: var(--card-bg);
   color: var(--text-h);
@@ -131,10 +150,11 @@ select {
 
 .auth-card button {
   padding: 10px 16px;
-  border-radius: 10px;
+  border-radius: 2px;
   border: none;
   background: var(--accent);
   color: white;
+  font-family: var(--font-display);
   white-space: nowrap;
 }
 
@@ -239,10 +259,11 @@ select {
   position: relative;
   width: 96px;
   height: 96px;
-  border-radius: 8px;
+  border-radius: 2px;
   overflow: hidden;
   border: 1px solid var(--border);
   flex: none;
+  box-shadow: var(--shadow-print);
 }
 
 .card-pane-image img {
@@ -292,11 +313,17 @@ select {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 12px 10px 16px;
+  padding: 16px 12px 10px 16px;
+  border-bottom: 1px solid var(--text-h);
+  box-shadow: 0 3px 0 -1px var(--text-h);
+  margin-bottom: 8px;
 }
 
 .sidebar-title {
-  font-weight: 600;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 21px;
+  letter-spacing: 0.3px;
   color: var(--text-h);
 }
 
@@ -308,7 +335,7 @@ select {
   font-size: 16px;
   width: 24px;
   height: 24px;
-  border-radius: 6px;
+  border-radius: 2px;
 }
 
 .sidebar-add-root:hover {
@@ -347,7 +374,7 @@ select {
   gap: 4px;
   padding-right: 8px;
   height: 30px;
-  border-radius: 6px;
+  border-radius: 2px;
   cursor: pointer;
   color: var(--text);
 }
@@ -411,11 +438,11 @@ select {
   align-items: center;
   gap: 6px;
   padding: 5px 12px;
-  border-radius: 6px;
+  border-radius: 2px;
   background: var(--card-bg);
   color: var(--text-h);
   font-size: 13.5px;
-  box-shadow: var(--shadow-lift);
+  box-shadow: var(--shadow-print-lift);
   border: 1px solid var(--card-border);
 }
 
@@ -507,9 +534,11 @@ select {
   align-items: center;
   gap: 6px;
   padding: 8px 14px 0;
-  font-size: 12px;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 12.5px;
   color: var(--text);
-  opacity: 0.55;
+  opacity: 0.6;
 }
 
 .pane-breadcrumb-item:last-child {
@@ -545,9 +574,10 @@ select {
   margin: 0 10px;
   padding: 6px 12px;
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 2px;
   background: none;
   color: var(--text);
+  font-family: var(--font-display);
   font-size: 13px;
   white-space: nowrap;
   cursor: pointer;
@@ -567,6 +597,7 @@ select {
   background: none;
   color: var(--text);
   opacity: 0.6;
+  font-family: var(--font-display);
   font-size: 13px;
   white-space: nowrap;
   cursor: pointer;
@@ -600,7 +631,8 @@ select {
   justify-content: space-between;
   padding: 14px 16px;
   border-bottom: 1px solid var(--border);
-  font-weight: 600;
+  font-family: var(--font-display);
+  font-weight: 700;
   color: var(--text-h);
 }
 
@@ -692,9 +724,11 @@ select {
   transform: translateX(-50%);
   background: var(--text-h);
   color: var(--bg);
+  font-family: var(--font-display);
+  font-style: italic;
   font-size: 13px;
   padding: 8px 16px;
-  border-radius: 999px;
+  border-radius: 2px;
   box-shadow: var(--shadow-lift);
   z-index: 30;
 }
@@ -705,7 +739,8 @@ select {
   background: none;
   padding: 6px 14px;
   color: var(--text);
-  font-size: 14px;
+  font-family: var(--font-display);
+  font-size: 14.5px;
   white-space: nowrap;
   flex: none;
 }
@@ -713,7 +748,7 @@ select {
 .tab-strip .tab.is-active {
   color: var(--text-h);
   border-bottom-color: var(--accent);
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .tab-strip .tab--card {
@@ -721,7 +756,7 @@ select {
   align-items: center;
   gap: 4px;
   padding: 0 6px 0 0;
-  border-radius: 6px 6px 0 0;
+  border-radius: 2px 2px 0 0;
 }
 
 .tab-strip .tab--card button[role='tab'] {
@@ -729,6 +764,8 @@ select {
   background: none;
   padding: 6px 4px 6px 14px;
   color: var(--text);
+  font-family: var(--font-display);
+  font-style: italic;
   font-size: 14px;
   max-width: 160px;
   overflow: hidden;
@@ -753,7 +790,7 @@ select {
   font-size: 10px;
   width: 18px;
   height: 18px;
-  border-radius: 4px;
+  border-radius: 2px;
   flex: none;
 }
 
@@ -768,10 +805,11 @@ select {
   background: none;
   color: var(--text);
   opacity: 0.55;
+  font-family: var(--font-display);
   font-size: 16px;
   width: 26px;
   height: 26px;
-  border-radius: 6px;
+  border-radius: 2px;
   margin-left: 4px;
 }
 
@@ -794,9 +832,9 @@ select {
   min-height: 120px;
   background: var(--card-bg);
   border: 1px solid var(--card-border);
-  border-radius: 14px;
+  border-radius: 2px;
   padding: 14px 14px 10px;
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-print);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -810,13 +848,13 @@ select {
 
 .card-tile.is-hovered,
 .card-tile:hover {
-  box-shadow: var(--shadow-lift);
+  box-shadow: var(--shadow-print-lift);
   border-color: var(--accent-border);
 }
 
 .card-tile.is-drag-overlay {
   cursor: grabbing;
-  box-shadow: var(--shadow-lift);
+  box-shadow: var(--shadow-print-lift);
 }
 
 .pin-indicator {
@@ -889,7 +927,7 @@ select {
   border: none;
   background: none;
   padding: 5px 10px 5px 6px;
-  border-radius: 999px;
+  border-radius: 3px;
   opacity: 0.45;
 }
 
@@ -920,8 +958,10 @@ select {
   border: none;
   background: var(--sticker-color);
   color: #2b2b2b;
-  font-size: 10.5px;
-  font-weight: 600;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 11px;
+  font-weight: 700;
   line-height: 1;
   padding: 5px 9px;
   border-radius: 6px 6px 6px 2px;
@@ -1015,12 +1055,13 @@ select {
 }
 
 .cloud-hub-label {
-  font-size: 12px;
-  font-weight: 600;
+  font-family: var(--font-display);
+  font-size: 12.5px;
+  font-weight: 700;
   color: var(--text);
   opacity: 0.55;
   text-transform: uppercase;
-  letter-spacing: 0.6px;
+  letter-spacing: 0.8px;
   white-space: nowrap;
 }
 
@@ -1044,15 +1085,15 @@ select {
   color: var(--text);
   background: var(--card-bg);
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: 2px;
   padding: 4px 10px;
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow-print);
 }
 
 .cloud-zoom button {
   width: 20px;
   height: 20px;
-  border-radius: 50%;
+  border-radius: 2px;
   border: 1px solid var(--border);
   background: var(--canvas-bg);
   color: var(--text-h);
@@ -1077,9 +1118,11 @@ select {
   transform: translate(-50%, 0);
   background: var(--text-h);
   color: var(--bg);
+  font-family: var(--font-display);
+  font-style: italic;
   font-size: 11px;
   padding: 4px 10px;
-  border-radius: 999px;
+  border-radius: 2px;
   white-space: nowrap;
   pointer-events: none;
   display: flex;
@@ -1126,12 +1169,13 @@ select {
 }
 
 .timeline-toolbar-label {
-  font-weight: 600;
+  font-family: var(--font-display);
+  font-weight: 700;
   color: var(--text-h);
-  font-size: 13px;
+  font-size: 13.5px;
   text-transform: uppercase;
-  letter-spacing: 0.6px;
-  opacity: 0.6;
+  letter-spacing: 0.8px;
+  opacity: 0.7;
 }
 
 .timeline-zoom {
@@ -1145,7 +1189,7 @@ select {
 .timeline-zoom button {
   width: 22px;
   height: 22px;
-  border-radius: 50%;
+  border-radius: 2px;
   border: 1px solid var(--border);
   background: var(--card-bg);
   color: var(--text-h);
@@ -1179,10 +1223,11 @@ select {
 
 .timeline-empty-hint {
   color: var(--text);
-  opacity: 0.5;
+  opacity: 0.6;
+  font-style: italic;
   font-size: 13px;
   border: 1px dashed var(--border);
-  border-radius: 14px;
+  border-radius: 2px;
   padding: 20px;
   min-width: 260px;
   display: flex;
@@ -1204,11 +1249,13 @@ select {
 
 .timeline-unassigned-label {
   padding: 16px 20px 8px;
-  font-size: 12px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 12.5px;
   text-transform: uppercase;
-  letter-spacing: 0.6px;
+  letter-spacing: 0.8px;
   color: var(--text);
-  opacity: 0.5;
+  opacity: 0.6;
 }
 
 .timeline-unassigned-track {
@@ -1227,11 +1274,13 @@ select {
 
 .timeline-structure-label {
   padding: 0 20px 10px;
-  font-size: 12px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 12.5px;
   text-transform: uppercase;
-  letter-spacing: 0.6px;
+  letter-spacing: 0.8px;
   color: var(--text);
-  opacity: 0.5;
+  opacity: 0.6;
 }
 
 .timeline-structure-group {
@@ -1242,7 +1291,9 @@ select {
   border: none;
   background: none;
   color: var(--accent);
-  font-size: 12.5px;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 13.5px;
   font-weight: 600;
   padding: 0 0 8px;
   cursor: pointer;
@@ -1271,8 +1322,10 @@ select {
   background: var(--text-h);
   color: var(--bg);
   padding: 10px 12px 10px 18px;
-  border-radius: 999px;
+  border-radius: 2px;
   box-shadow: var(--shadow-lift);
+  font-family: var(--font-display);
+  font-style: italic;
   font-size: 13px;
   z-index: 10;
   max-width: calc(100vw - 40px);
@@ -1290,7 +1343,9 @@ select {
   background: var(--accent);
   color: white;
   padding: 6px 14px;
-  border-radius: 999px;
+  border-radius: 2px;
+  font-family: var(--font-display);
+  font-style: normal;
   font-size: 12px;
   white-space: nowrap;
 }
