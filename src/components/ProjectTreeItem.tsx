@@ -139,6 +139,20 @@ export function ProjectTreeItem({
 
       {hasExpandable && isOpen && (
         <div className="tree-children">
+          {/* This project's own cards before its sub-projects — what
+              directly belongs here should read before the folders nested
+              underneath it, not after. */}
+          {cards.map((card) => (
+            <TreeCardLeaf
+              key={card.id}
+              card={card}
+              projectId={node.project.id}
+              depth={depth + 1}
+              isActive={activeCardId === card.id}
+              onSelect={() => onSelectCard(node.project.id, card.id)}
+            />
+          ))}
+
           {node.children.map((child) => (
             <ProjectTreeItem
               key={child.project.id}
@@ -154,17 +168,6 @@ export function ProjectTreeItem({
               onAddChild={onAddChild}
               onRename={onRename}
               onDelete={onDelete}
-            />
-          ))}
-
-          {cards.map((card) => (
-            <TreeCardLeaf
-              key={card.id}
-              card={card}
-              projectId={node.project.id}
-              depth={depth + 1}
-              isActive={activeCardId === card.id}
-              onSelect={() => onSelectCard(node.project.id, card.id)}
             />
           ))}
         </div>
