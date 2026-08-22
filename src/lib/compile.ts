@@ -1,30 +1,9 @@
-import type { Card, Project } from '../types'
-import { buildManuscript } from './manuscript'
+import type { ManuscriptSection } from './manuscript'
 
-function childrenByParent(projects: Project[]): Map<string, Project[]> {
-  const map = new Map<string, Project[]>()
-  for (const p of projects) {
-    if (!p.parent_id) continue
-    const list = map.get(p.parent_id)
-    if (list) list.push(p)
-    else map.set(p.parent_id, [p])
-  }
-  return map
-}
-
-// Walks a project and every nested subgroup depth-first (see
-// buildManuscript) and formats it as plain text — the manuscript read top
-// to bottom, the way the author has actually arranged it so far.
-export function compileToText(projects: Project[], cardsByProject: Map<string, Card[]>, rootId: string): string {
-  const children = childrenByParent(projects)
-  const byId = new Map(projects.map((p) => [p.id, p]))
-  const sections = buildManuscript(
-    rootId,
-    (id) => (children.get(id) ?? []).map((p) => p.id),
-    (id) => cardsByProject.get(id) ?? [],
-    (id) => byId.get(id)?.title ?? 'Без названия',
-  )
-
+// Formats an already-built manuscript (see manuscript.ts) as Markdown — a
+// project/subgroup title becomes a heading at its depth, its cards follow
+// as plain paragraphs in sequence order.
+export function sectionsToMarkdown(sections: ManuscriptSection[]): string {
   const lines: string[] = []
   for (const section of sections) {
     lines.push(`${'#'.repeat(Math.min(section.depth + 1, 6))} ${section.title}`, '')
@@ -39,8 +18,7 @@ export function compileToText(projects: Project[], cardsByProject: Map<string, C
   return `${lines.join('\n').trim()}\n`
 }
 
-export function downloadTextFile(filename: string, content: string) {
-  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
+export function downloadBlob(filename: string, blob: Blob) {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url

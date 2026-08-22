@@ -6,6 +6,7 @@ import { TabStrip } from './TabStrip'
 import { PreviewBar } from './PreviewBar'
 import { CardTabPane } from './CardTabPane'
 import { ArchivePanel } from './ArchivePanel'
+import { ExportMenu } from './ExportMenu'
 import { cardTabTitle, timelinePositionLabel } from '../lib/timeline'
 import { buildManuscript } from '../lib/manuscript'
 import { useCloudSimulation } from '../hooks/useCloudSimulation'
@@ -34,7 +35,9 @@ interface Props {
   initialOpenCardId?: string | null
   onConsumedInitialCard?: () => void
   onActiveCardChange?: (id: string | null) => void
-  onCompile: () => void
+  onExportMarkdown: () => void
+  onExportDocx: () => void
+  onExportPdf: () => void
   // Root-to-active chain of project titles — shown as a persistent "where
   // am I" strip, since the sidebar alone stops being enough once a project
   // is nested a few levels deep or scrolled out of view.
@@ -74,7 +77,9 @@ export function BoardView({
   initialOpenCardId,
   onConsumedInitialCard,
   onActiveCardChange,
-  onCompile,
+  onExportMarkdown,
+  onExportDocx,
+  onExportPdf,
   breadcrumbPath,
   groupParentById,
   onNavigateToProject,
@@ -308,14 +313,7 @@ export function BoardView({
         >
           Архив
         </button>
-        <button
-          type="button"
-          className="pane-compile"
-          onClick={onCompile}
-          title="Собрать проект и все вложенные группы в один текстовый документ"
-        >
-          ⬇ Документ
-        </button>
+        <ExportMenu onExportMarkdown={onExportMarkdown} onExportDocx={onExportDocx} onExportPdf={onExportPdf} />
       </div>
 
       <div className="board-body" ref={bodyRef}>

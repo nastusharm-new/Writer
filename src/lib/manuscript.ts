@@ -1,4 +1,4 @@
-import type { Card } from '../types'
+import type { Card, Project } from '../types'
 import { getSequence, getUnassigned } from './timeline'
 
 export interface ManuscriptSection {
@@ -34,4 +34,29 @@ export function buildManuscript(
 
   walk(rootId, 0)
   return sections
+}
+
+// Convenience wrapper for callers that already have the full project list
+// (parent_id-based) rather than BoardView's aggregation-map shape — used by
+// the export flow (App.tsx), which fetches a fresh snapshot of every card
+// rather than trusting the sidebar's cache.
+export function manuscriptFromProjects(
+  projects: Project[],
+  cardsByProject: Map<string, Card[]>,
+  rootId: string,
+): ManuscriptSection[] {
+  const childrenOf = new Map<string, string[]>()
+  for (const p of projects) {
+    if (!p.parent_id) continue
+    const list = childrenOf.get(p.parent_id)
+    if (list) list.push(p.id)
+    else childrenOf.set(p.parent_id, [p.id])
+  }
+  const byId = new Map(projects.map((p) => [p.id, p]))
+  return buildManuscript(
+    rootId,
+    (id) => childrenOf.get(id) ?? [],
+    (id) => cardsByProject.get(id) ?? [],
+    (id) => byId.get(id)?.title ?? 'Без названия',
+  )
 }

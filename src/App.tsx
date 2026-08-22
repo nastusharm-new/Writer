@@ -4,7 +4,10 @@ import { useProjectTree } from './hooks/useProjectTree'
 import { useCards } from './hooks/useCards'
 import { useAllCards } from './hooks/useAllCards'
 import { collectDescendantIds, getAncestorPath } from './lib/projectTree'
-import { compileToText, downloadTextFile } from './lib/compile'
+import { sectionsToMarkdown, downloadBlob } from './lib/compile'
+import { sectionsToDocxBlob } from './lib/exportDocx'
+import { printManuscript } from './lib/exportPdf'
+import { manuscriptFromProjects } from './lib/manuscript'
 import { getSequence, getUnassigned } from './lib/timeline'
 import { dataStore } from './lib/dataStore'
 import { AuthScreen } from './components/AuthScreen'
@@ -112,9 +115,9 @@ function Workspace({ userId, onSignOut }: { userId: string; onSignOut: () => voi
   }
 
   // Bundles the active project and everything nested under it into one
-  // plain-text document — fetches every card fresh rather than relying on
-  // the sidebar's snapshot, which excludes the active project's own cards.
-  const handleCompile = async () => {
+  // manuscript — fetches every card fresh rather than relying on the
+  // sidebar's snapshot, which excludes the active project's own cards.
+  const buildExportSections = async () => {
     const fresh = await dataStore.listCardsForUser(userId)
     const cardsByProjectFresh = new Map<string, Card[]>()
     for (const card of fresh) {
@@ -122,9 +125,25 @@ function Workspace({ userId, onSignOut }: { userId: string; onSignOut: () => voi
       if (list) list.push(card)
       else cardsByProjectFresh.set(card.project_id, [card])
     }
-    const text = compileToText(projects, cardsByProjectFresh, activeProjectId)
+    return manuscriptFromProjects(projects, cardsByProjectFresh, activeProjectId)
+  }
+
+  const handleExportMarkdown = async () => {
+    const sections = await buildExportSections()
     const title = projectTitleById.get(activeProjectId) ?? 'draft'
-    downloadTextFile(`${title}.txt`, text)
+    downloadBlob(`${title}.md`, new Blob([sectionsToMarkdown(sections)], { type: 'text/markdown;charset=utf-8' }))
+  }
+
+  const handleExportDocx = async () => {
+    const sections = await buildExportSections()
+    const title = projectTitleById.get(activeProjectId) ?? 'draft'
+    downloadBlob(`${title}.docx`, await sectionsToDocxBlob(sections))
+  }
+
+  const handleExportPdf = async () => {
+    const sections = await buildExportSections()
+    const title = projectTitleById.get(activeProjectId) ?? 'draft'
+    printManuscript(title, sections)
   }
 
   // Dragging a folder row onto another folder in the sidebar — reparents
@@ -222,7 +241,9 @@ function Workspace({ userId, onSignOut }: { userId: string; onSignOut: () => voi
             initialOpenCardId={pendingCardId}
             onConsumedInitialCard={() => setPendingCardId(null)}
             onActiveCardChange={setActiveCardId}
-            onCompile={handleCompile}
+            onExportMarkdown={handleExportMarkdown}
+            onExportDocx={handleExportDocx}
+            onExportPdf={handleExportPdf}
             breadcrumbPath={breadcrumbPath}
             groupParentById={groupParentById}
             onNavigateToProject={setActiveProjectId}
