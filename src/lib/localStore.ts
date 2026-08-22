@@ -78,6 +78,19 @@ export const localStore: DataStore = {
     return updated
   },
 
+  async moveProject(id: string, parentId: string | null) {
+    const projects = read<Project[]>(LS_PROJECTS, [])
+    let updated: Project | undefined
+    const next = projects.map((p) => {
+      if (p.id !== id) return p
+      updated = { ...p, parent_id: parentId }
+      return updated
+    })
+    write(LS_PROJECTS, next)
+    if (!updated) throw new Error('project not found')
+    return updated
+  },
+
   async deleteProject(id: string) {
     // Mirrors the DB's ON DELETE CASCADE: drop the project, its descendant
     // projects (any depth), and their cards.

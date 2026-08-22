@@ -34,6 +34,7 @@ function Workspace({ userId, onSignOut }: { userId: string; onSignOut: () => voi
     setActiveProjectId,
     addProject,
     renameProject,
+    moveProject,
     deleteProject,
   } = useProjectTree(userId)
   const {
@@ -82,6 +83,18 @@ function Workspace({ userId, onSignOut }: { userId: string; onSignOut: () => voi
   // own cards (rendered as leaves under it) stay hidden behind a collapsed
   // row nobody thought to click.
   const activeAncestorIds = useMemo(() => activeAncestors.map((p) => p.id), [activeAncestors])
+  // A subgroup's parent project id, scoped to the current aggregation —
+  // used by the cloud's node-link graph to draw the folder-to-folder edge
+  // (a subfolder's hub to its parent's hub), not just card-to-folder ones.
+  const groupParentById = useMemo(() => {
+    const idSet = new Set(descendantIds)
+    const map = new Map<string, string>()
+    for (const id of descendantIds) {
+      const project = projects.find((p) => p.id === id)
+      if (project?.parent_id && idSet.has(project.parent_id)) map.set(id, project.parent_id)
+    }
+    return map
+  }, [projects, descendantIds])
 
   if (treeLoading || !activeProjectId) {
     return <div className="app-loading">Загрузка…</div>
@@ -108,6 +121,15 @@ function Workspace({ userId, onSignOut }: { userId: string; onSignOut: () => voi
     downloadTextFile(`${title}.txt`, text)
   }
 
+  // Dragging a folder row onto another folder in the sidebar — reparents
+  // it, as long as that doesn't drop it onto itself or one of its own
+  // descendants (which would either be a no-op or create a cycle).
+  const handleMoveProject = (projectId: string, targetParentId: string) => {
+    const invalidTargets = collectDescendantIds(projects, projectId)
+    if (invalidTargets.includes(targetParentId)) return
+    moveProject(projectId, targetParentId)
+  }
+
   // Dragging a card leaf onto a different project row in the sidebar.
   const handleMoveCard = async (cardId: string, sourceProjectId: string, targetProjectId: string) => {
     if (sourceProjectId === targetProjectId) return
@@ -129,9 +151,11 @@ function Workspace({ userId, onSignOut }: { userId: string; onSignOut: () => voi
         cardsByProject={cardsByProject}
         activeCardId={activeCardId}
         activeAncestorIds={activeAncestorIds}
+        projectTitleById={projectTitleById}
         onSelect={setActiveProjectId}
         onSelectCard={handleSelectCard}
         onMoveCard={handleMoveCard}
+        onMoveProject={handleMoveProject}
         onAddChild={(parentId) => addProject(parentId, 'Без названия')}
         onRename={renameProject}
         onDelete={deleteProject}
@@ -157,6 +181,8 @@ function Workspace({ userId, onSignOut }: { userId: string; onSignOut: () => voi
             onActiveCardChange={setActiveCardId}
             onCompile={handleCompile}
             breadcrumbPath={breadcrumbPath}
+            groupParentById={groupParentById}
+            onNavigateToProject={setActiveProjectId}
           />
         )}
       </main>

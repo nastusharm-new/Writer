@@ -367,6 +367,24 @@ select {
   outline-offset: -1px;
 }
 
+.tree-row.is-dragging {
+  opacity: 0.35;
+}
+
+.tree-drag-handle {
+  flex: none;
+  width: 12px;
+  text-align: center;
+  font-size: 11px;
+  color: var(--text);
+  opacity: 0.3;
+  cursor: grab;
+}
+
+.tree-row:hover .tree-drag-handle {
+  opacity: 0.7;
+}
+
 .tree-row--card {
   width: 100%;
   border: none;
@@ -922,39 +940,76 @@ select {
   transform-origin: 0 0;
 }
 
-/* One "territory" per project feeding into this cloud (the active project
-   itself plus every nested subgroup) — a visible, labeled boundary instead
-   of cards just scattered with no indication of what groups with what. */
-.cloud-cluster-halo {
+/* Node-link graph, Obsidian-style: a small hub node per project feeding
+   this cloud (the active project plus every nested subgroup), with real
+   drawn edges — a card to its own folder's hub, a subfolder's hub to its
+   parent's hub — instead of an inferred boundary the physics doesn't
+   actually respect. */
+.cloud-links {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.cloud-link-line {
+  stroke: color-mix(in srgb, var(--text) 20%, transparent);
+  stroke-width: 1;
+}
+
+.cloud-link-line--folder {
+  stroke: color-mix(in srgb, var(--accent) 35%, transparent);
+  stroke-width: 1.5;
+}
+
+.cloud-hub {
   position: absolute;
   transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  /* Stays clickable even when a card tile's simulated position happens to
+     overlap it — a folder hub is a navigation control, not just a label. */
+  z-index: 2;
+}
+
+.cloud-hub:disabled {
+  cursor: default;
+}
+
+.cloud-hub-dot {
+  width: 14px;
+  height: 14px;
   border-radius: 50%;
-  pointer-events: none;
-  background: color-mix(in srgb, var(--text) 4%, transparent);
-  border: 1px dashed color-mix(in srgb, var(--text) 14%, transparent);
+  background: var(--card-bg);
+  border: 2px solid color-mix(in srgb, var(--text) 35%, transparent);
 }
 
-.cloud-cluster-halo.is-active {
-  background: color-mix(in srgb, var(--accent) 7%, transparent);
-  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+.cloud-hub.is-active .cloud-hub-dot {
+  background: var(--accent);
+  border-color: var(--accent);
 }
 
-.cloud-cluster-label {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
+.cloud-hub-label {
   font-size: 12px;
   font-weight: 600;
   color: var(--text);
-  opacity: 0.4;
+  opacity: 0.55;
   text-transform: uppercase;
   letter-spacing: 0.6px;
-  pointer-events: none;
   white-space: nowrap;
 }
 
-.cloud-cluster-label.is-active {
+.cloud-hub:hover .cloud-hub-label {
   opacity: 0.9;
+}
+
+.cloud-hub.is-active .cloud-hub-label {
+  opacity: 1;
   color: var(--accent);
 }
 

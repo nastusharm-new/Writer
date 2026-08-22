@@ -80,6 +80,11 @@ export function useProjectTree(userId: string | undefined) {
     setProjects((prev) => prev.map((p) => (p.id === id ? updated : p)))
   }, [])
 
+  const moveProject = useCallback(async (id: string, parentId: string | null) => {
+    const updated = await dataStore.moveProject(id, parentId)
+    setProjects((prev) => prev.map((p) => (p.id === id ? updated : p)))
+  }, [])
+
   const deleteProject = useCallback(
     async (id: string) => {
       await dataStore.deleteProject(id)
@@ -116,6 +121,7 @@ export function useProjectTree(userId: string | undefined) {
     setActiveProjectId,
     addProject,
     renameProject,
+    moveProject,
     deleteProject,
   }
 }

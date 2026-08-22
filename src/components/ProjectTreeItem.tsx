@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import type { KeyboardEvent } from 'react'
-import { useDroppable } from '@dnd-kit/core'
+import { useDraggable, useDroppable } from '@dnd-kit/core'
 import type { ProjectTreeNode } from '../hooks/useProjectTree'
 import { TreeCardLeaf } from './TreeCardLeaf'
 import type { Card } from '../types'
@@ -46,6 +46,24 @@ export function ProjectTreeItem({
   const isOpen = expanded.has(node.project.id)
   const isActive = activeId === node.project.id
   const { setNodeRef: setDropRef, isOver } = useDroppable({ id: `project:${node.project.id}` })
+  // A folder is draggable onto another folder to reparent it (Sidebar's
+  // DndContext resolves the drop the same way it does for cards). The
+  // drag listeners live on a dedicated handle rather than the whole row,
+  // since the row also hosts click-to-select, double-click-to-rename, and
+  // the add/delete buttons.
+  const {
+    attributes: dragAttributes,
+    listeners: dragListeners,
+    setNodeRef: setDragRef,
+    isDragging,
+  } = useDraggable({ id: `project-drag:${node.project.id}`, data: { projectId: node.project.id } })
+  const setRowRef = useCallback(
+    (el: HTMLDivElement | null) => {
+      setDropRef(el)
+      setDragRef(el)
+    },
+    [setDropRef, setDragRef],
+  )
 
   const commitRename = () => {
     setEditing(false)
@@ -68,11 +86,21 @@ export function ProjectTreeItem({
   return (
     <div className="tree-node">
       <div
-        ref={setDropRef}
-        className={`tree-row ${isActive ? 'is-active' : ''} ${isOver ? 'is-drop-target' : ''}`}
+        ref={setRowRef}
+        className={`tree-row ${isActive ? 'is-active' : ''} ${isOver ? 'is-drop-target' : ''} ${isDragging ? 'is-dragging' : ''}`}
         style={{ paddingLeft: 8 + depth * 16 }}
         onClick={() => onSelect(node.project.id)}
       >
+        <span
+          className="tree-drag-handle"
+          style={{ touchAction: 'none' }}
+          title="Перетащить в другую папку"
+          onClick={(e) => e.stopPropagation()}
+          {...dragAttributes}
+          {...dragListeners}
+        >
+          ⠿
+        </span>
         <button
           type="button"
           className={`tree-toggle ${hasExpandable ? '' : 'is-empty'}`}

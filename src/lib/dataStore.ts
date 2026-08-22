@@ -27,6 +27,10 @@ export interface DataStore {
   listProjects(userId: string): Promise<Project[]>
   createProject(userId: string, title: string, parentId: string | null): Promise<Project>
   renameProject(id: string, title: string): Promise<Project>
+  // Reparents a project — dragging its row onto another folder in the
+  // sidebar tree. Cycle-safety (never dropping a folder onto itself or one
+  // of its own descendants) is the caller's job, not the store's.
+  moveProject(id: string, parentId: string | null): Promise<Project>
   deleteProject(id: string): Promise<void>
 
   listCards(projectId: string): Promise<Card[]>

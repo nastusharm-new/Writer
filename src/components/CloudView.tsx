@@ -3,7 +3,7 @@ import type { PointerEvent as ReactPointerEvent } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { CardTile } from './CardTile'
 import { getSequence } from '../lib/timeline'
-import { CARD_RADIUS, type ClusterAnchor, type SimNode } from '../hooks/useCloudSimulation'
+import { hubId, type SimNode } from '../hooks/useCloudSimulation'
 import type { Card, CardStatus } from '../types'
 import type { CardPatch } from '../lib/dataStore'
 
@@ -11,7 +11,14 @@ interface Props {
   cards: Card[] // the active project's own cards + every nested subgroup's
   activeProjectId: string
   projectTitleById: Map<string, string>
-  clusterAnchors: Map<string, ClusterAnchor>
+  // One per project feeding this cloud (the active project plus every
+  // nested subgroup) — a small node standing in for that folder, the way
+  // Obsidian's graph view uses a node per note.
+  hubNodes: SimNode[]
+  // Folder-to-parent-folder pairs, drawn as a line between their hubs —
+  // this is what makes the nesting itself visible, not just which card
+  // belongs to which folder.
+  hubEdges: { from: string; to: string }[]
   size: { width: number; height: number }
   positions: Map<string, SimNode>
   beginDrag: (id: string, x: number, y: number) => void
@@ -21,6 +28,9 @@ interface Props {
   onPatch: (id: string, patch: CardPatch) => void
   onDelete: (id: string) => void
   onOpen: (cardId: string, projectId: string) => void
+  // Clicking a subgroup's hub jumps straight to that project, without
+  // opening any particular card (unlike onOpen).
+  onNavigateToProject: (projectId: string) => void
   timelinePosition: (id: string) => string
   hoveredId: string | null
   onHover: (id: string | null) => void
@@ -40,7 +50,8 @@ export function CloudView({
   cards,
   activeProjectId,
   projectTitleById,
-  clusterAnchors,
+  hubNodes,
+  hubEdges,
   size,
   positions,
   beginDrag,
@@ -50,6 +61,7 @@ export function CloudView({
   onPatch,
   onDelete,
   onOpen,
+  onNavigateToProject,
   timelinePosition,
   hoveredId,
   onHover,
@@ -99,7 +111,7 @@ export function CloudView({
     // Only pan when the empty canvas itself was hit — not a card (which
     // starts its own drag) and not UI chrome sitting on top of the canvas
     // (zoom buttons and the like).
-    if ((e.target as HTMLElement).closest('.card-tile, button')) return
+    if ((e.target as HTMLElement).closest('.card-tile, button, .cloud-hub')) return
     ;(e.currentTarget as Element).setPointerCapture?.(e.pointerId)
     panRef.current = { startX: e.clientX, startY: e.clientY, viewX: view.x, viewY: view.y }
   }
@@ -144,17 +156,24 @@ export function CloudView({
     .map((c) => positions.get(c.id))
     .filter((p): p is SimNode => Boolean(p))
 
-  // How many cards sit in each group, so a cluster's halo actually scales
-  // with what's inside it instead of every territory looking the same size.
-  const clusterCounts = new Map<string, number>()
-  for (const card of cards) {
-    clusterCounts.set(card.project_id, (clusterCounts.get(card.project_id) ?? 0) + 1)
-  }
-  const clusters = Array.from(clusterAnchors.entries()).map(([groupId, anchor]) => {
-    const count = clusterCounts.get(groupId) ?? 0
-    const radius = Math.max(CARD_RADIUS * 1.3, Math.sqrt(count) * CARD_RADIUS * 1.05)
-    return { groupId, anchor, radius, isActive: groupId === activeProjectId }
-  })
+  // Every card's line to its own folder's hub, plus every folder hub's
+  // line to its parent folder's hub — literal edges, Obsidian-graph style,
+  // so "what belongs to what" is a drawn line rather than something you
+  // have to infer from proximity or a background shape.
+  const cardEdges = cards
+    .map((card) => {
+      const from = positions.get(card.id)
+      const to = positions.get(hubId(card.project_id))
+      return from && to ? { from, to } : null
+    })
+    .filter((e): e is { from: SimNode; to: SimNode } => Boolean(e))
+  const folderEdges = hubEdges
+    .map(({ from, to }) => {
+      const fromPos = positions.get(hubId(from))
+      const toPos = positions.get(hubId(to))
+      return fromPos && toPos ? { from: fromPos, to: toPos } : null
+    })
+    .filter((e): e is { from: SimNode; to: SimNode } => Boolean(e))
 
   return (
     <div
@@ -180,25 +199,47 @@ export function CloudView({
           </svg>
         )}
 
-        {clusters.map(({ groupId, anchor, radius, isActive }) => (
-          <div
-            key={groupId}
-            className={`cloud-cluster-halo ${isActive ? 'is-active' : ''}`}
-            style={{
-              left: anchor.x,
-              top: anchor.y,
-              width: radius * 2,
-              height: radius * 2,
-            }}
-          >
-            <span
-              className={`cloud-cluster-label ${isActive ? 'is-active' : ''}`}
-              style={{ top: -radius - 14 }}
+        {/* Structure, drawn as edges rather than an inferred boundary: a
+            card's line to its own folder, and a subfolder's line to its
+            parent folder. */}
+        {(cardEdges.length > 0 || folderEdges.length > 0) && (
+          <svg className="cloud-links" width={size.width} height={size.height}>
+            {cardEdges.map((e, i) => (
+              <line key={`c${i}`} x1={e.from.x} y1={e.from.y} x2={e.to.x} y2={e.to.y} className="cloud-link-line" />
+            ))}
+            {folderEdges.map((e, i) => (
+              <line
+                key={`f${i}`}
+                x1={e.from.x}
+                y1={e.from.y}
+                x2={e.to.x}
+                y2={e.to.y}
+                className="cloud-link-line cloud-link-line--folder"
+              />
+            ))}
+          </svg>
+        )}
+
+        {hubNodes.map((hub) => {
+          const pos = positions.get(hub.id)
+          if (!pos || !hub.groupId) return null
+          const isActive = hub.groupId === activeProjectId
+          return (
+            <button
+              key={hub.id}
+              type="button"
+              className={`cloud-hub ${isActive ? 'is-active' : ''}`}
+              style={{ left: pos.x, top: pos.y }}
+              onClick={() => {
+                if (!isActive) onNavigateToProject(hub.groupId!)
+              }}
+              disabled={isActive}
             >
-              {projectTitleById.get(groupId) ?? 'Без названия'}
-            </span>
-          </div>
-        ))}
+              <span className="cloud-hub-dot" />
+              <span className="cloud-hub-label">{projectTitleById.get(hub.groupId) ?? 'Без названия'}</span>
+            </button>
+          )
+        })}
 
         {cards.map((card) => {
           const pos = positions.get(card.id)

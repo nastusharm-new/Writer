@@ -37,6 +37,10 @@ interface Props {
   // am I" strip, since the sidebar alone stops being enough once a project
   // is nested a few levels deep or scrolled out of view.
   breadcrumbPath: string[]
+  // A subgroup's parent project id, within the current aggregation — draws
+  // the folder-to-folder edge in the cloud's node-link graph.
+  groupParentById: Map<string, string>
+  onNavigateToProject: (projectId: string) => void
 }
 
 interface OpenTab {
@@ -63,6 +67,8 @@ export function BoardView({
   onActiveCardChange,
   onCompile,
   breadcrumbPath,
+  groupParentById,
+  onNavigateToProject,
 }: Props) {
   const [openTabs, setOpenTabs] = useState<OpenTab[]>(() =>
     cards.length === 0 ? [{ key: makeTempKey(), cardId: null }] : [],
@@ -99,13 +105,30 @@ export function BoardView({
     return map
   }, [aggregatedCards])
   const groupOf = useCallback((id: string) => projectIdByCardId.get(id) ?? activeProjectId, [projectIdByCardId, activeProjectId])
+  const groupParent = useCallback((id: string) => groupParentById.get(id), [groupParentById])
   const cloudSim = useCloudSimulation({
     cards: aggregatedCards,
     width: size.width,
     height: size.height,
     groupOf,
     centerGroup: activeProjectId,
+    groupParent,
   })
+  // The folder-to-parent-folder edges to actually draw, resolved against
+  // whichever hubs the simulation currently has (a hub only exists once at
+  // least one of its cards has made it into the aggregation).
+  const hubEdges = useMemo(() => {
+    const hubGroupIds = new Set(
+      cloudSim.hubNodes.map((h) => h.groupId).filter((id): id is string => Boolean(id)),
+    )
+    const edges: { from: string; to: string }[] = []
+    for (const groupId of hubGroupIds) {
+      if (groupId === activeProjectId) continue
+      const parentId = groupParentById.get(groupId)
+      if (parentId && hubGroupIds.has(parentId)) edges.push({ from: groupId, to: parentId })
+    }
+    return edges
+  }, [cloudSim.hubNodes, groupParentById, activeProjectId])
 
   useEffect(() => {
     if (activeKey === 'cloud') {
@@ -239,7 +262,8 @@ export function BoardView({
             cards={aggregatedCards}
             activeProjectId={activeProjectId}
             projectTitleById={projectTitleById}
-            clusterAnchors={cloudSim.clusterAnchors}
+            hubNodes={cloudSim.hubNodes}
+            hubEdges={hubEdges}
             size={size}
             positions={cloudSim.positions}
             beginDrag={cloudSim.beginDrag}
@@ -252,6 +276,7 @@ export function BoardView({
               if (projectId === activeProjectId) openCardTab(cardId)
               else onOpenForeignCard(projectId, cardId)
             }}
+            onNavigateToProject={onNavigateToProject}
             hoveredId={hoveredId}
             onHover={setHoveredId}
             timelinePosition={(id) => timelinePositionLabel(cards, id)}

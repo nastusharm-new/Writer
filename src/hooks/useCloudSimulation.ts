@@ -19,91 +19,78 @@ export interface SimNode {
   vy?: number
   fx?: number | null
   fy?: number | null
+  // A small "hub" node standing in for a project/folder, rather than an
+  // actual card — see below.
+  isHub?: boolean
+  groupId?: string
 }
+
+type SimLink = SimulationLinkDatum<SimNode>
 
 // Collision radius: cards are 152x108 rectangles, so a circle sized off the
 // half-width alone still lets corners overlap along the diagonal — pad it
 // toward the half-diagonal (~94) for breathing room between tiles.
 export const CARD_RADIUS = 92
+export const HUB_RADIUS = 22
 
 interface Options {
   cards: Card[]
   width: number
   height: number
   // Which project each card belongs to, so cards pulled in from nested
-  // subgroups (see BoardView) drift toward their own cluster instead of
+  // subgroups (see BoardView) drift toward their own hub instead of
   // mixing uniformly with the active project's own cards.
   groupOf?: (cardId: string) => string
-  // The group that should sit at dead center (usually the active project
-  // itself) rather than being placed in the surrounding ring.
+  // The group that should sit pinned at dead center (the active project).
   centerGroup?: string
+  // A subgroup's parent group, when that parent is also part of the
+  // current aggregation — draws the folder-to-folder link that makes the
+  // nesting itself visible, not just each card's own group.
+  groupParent?: (groupId: string) => string | undefined
 }
 
-export interface ClusterAnchor {
-  x: number
-  y: number
-}
-
-// A minimal custom d3-force: nudges each node toward its group's anchor
-// point every tick. Weak enough that forceManyBody/forceCollide still keep
-// cards inside a cluster from overlapping — it only biases *where* those
-// local clusters end up, it doesn't override the rest of the physics.
-function forceCluster(getGroup: (id: string) => string, anchors: Map<string, ClusterAnchor>, strength: number) {
-  let nodes: SimNode[] = []
-  function force(alpha: number) {
-    for (const n of nodes) {
-      const anchor = anchors.get(getGroup(n.id))
-      if (!anchor) continue
-      n.vx = (n.vx ?? 0) + (anchor.x - n.x) * strength * alpha
-      n.vy = (n.vy ?? 0) + (anchor.y - n.y) * strength * alpha
-    }
-  }
-  force.initialize = (ns: SimNode[]) => {
-    nodes = ns
-  }
-  return force
-}
-
-function computeClusterAnchors(
-  groupIds: string[],
-  centerGroup: string | undefined,
-  width: number,
-  height: number,
-): Map<string, ClusterAnchor> {
-  const anchors = new Map<string, ClusterAnchor>()
-  const cx = width / 2
-  const cy = height / 2
-  const others = groupIds.filter((g) => g !== centerGroup)
-  if (centerGroup) anchors.set(centerGroup, { x: cx, y: cy })
-  const ringRadius = Math.max(220, Math.min(width, height) * 0.32)
-  others.forEach((groupId, i) => {
-    const angle = (i / Math.max(others.length, 1)) * Math.PI * 2 - Math.PI / 2
-    anchors.set(groupId, { x: cx + Math.cos(angle) * ringRadius, y: cy + Math.sin(angle) * ringRadius })
-  })
-  return anchors
+export function hubId(groupId: string) {
+  return `hub:${groupId}`
 }
 
 /**
- * Owns the d3-force simulation behind the "cloud" view.
+ * Owns the d3-force simulation behind the "cloud" view — a node-link graph
+ * in the spirit of Obsidian's graph view rather than an abstract scatter:
+ * every card links to a small hub node standing in for its project/folder,
+ * and a nested subfolder's hub links to its parent's hub. Dependencies
+ * (what belongs to what) are then a literal drawn line, not something you
+ * have to infer from proximity or a background shape.
  *
- * forceManyBody = cards repel each other; forceCollide = they never overlap;
- * forceX/forceY = a weak spring pulling everything toward the canvas
- * center, acting as a soft anchor rather than a hard boundary; forceLink is
- * wired up (empty for MVP) so manual card_links can drop in later without
- * restructuring the simulation.
+ * forceManyBody = nodes repel each other; forceCollide = they never
+ * overlap (hubs and cards use different radii); forceLink pulls each card
+ * toward its hub and each hub toward its parent hub; the active project's
+ * hub is pinned at dead center so the rest of the graph has a stable point
+ * to hang off of.
  */
-export function useCloudSimulation({ cards, width, height, groupOf, centerGroup }: Options) {
-  const simRef = useRef<Simulation<SimNode, SimulationLinkDatum<SimNode>> | null>(null)
+export function useCloudSimulation({ cards, width, height, groupOf, centerGroup, groupParent }: Options) {
+  const simRef = useRef<Simulation<SimNode, SimLink> | null>(null)
   const nodesRef = useRef<SimNode[]>([])
   const [positions, setPositions] = useState<Map<string, SimNode>>(new Map())
-  const [clusterAnchors, setClusterAnchors] = useState<Map<string, ClusterAnchor>>(new Map())
+  const [hubNodes, setHubNodes] = useState<SimNode[]>([])
 
   // Create the simulation once.
   useEffect(() => {
     const sim = forceSimulation<SimNode>([])
-      .force('charge', forceManyBody().strength(-340))
-      .force('collide', forceCollide<SimNode>(CARD_RADIUS).strength(1))
-      .force('link', forceLink<SimNode, SimulationLinkDatum<SimNode>>([]).id((d) => d.id).distance(160))
+      .force('charge', forceManyBody<SimNode>().strength((d) => (d.isHub ? -180 : -340)))
+      .force(
+        'collide',
+        forceCollide<SimNode>((d) => (d.isHub ? HUB_RADIUS : CARD_RADIUS)).strength(1),
+      )
+      .force(
+        'link',
+        forceLink<SimNode, SimLink>([])
+          .id((d) => d.id)
+          // Both link kinds target a hub, so distinguish by the *source*:
+          // a hub-to-parent-hub link (source is itself a hub) sits further
+          // out than a plain card-to-hub link.
+          .distance((l) => ((l.source as SimNode).isHub ? 210 : 130))
+          .strength((l) => ((l.source as SimNode).isHub ? 0.8 : 0.5)),
+      )
       .force('x', forceX<SimNode>(width / 2).strength(0.015))
       .force('y', forceY<SimNode>(height / 2).strength(0.015))
       .alphaDecay(0.015)
@@ -123,52 +110,82 @@ export function useCloudSimulation({ cards, width, height, groupOf, centerGroup 
     if (!sim) return
     ;(sim.force('x') as ReturnType<typeof forceX<SimNode>>)?.x(width / 2)
     ;(sim.force('y') as ReturnType<typeof forceY<SimNode>>)?.y(height / 2)
-  }, [width, height])
+    // The center hub is pinned outright (not just nudged) so the rest of
+    // the graph has a fixed point to hang off of.
+    if (centerGroup) {
+      const hub = nodesRef.current.find((n) => n.id === hubId(centerGroup))
+      if (hub) {
+        hub.fx = width / 2
+        hub.fy = height / 2
+      }
+    }
+  }, [width, height, centerGroup])
 
-  // Sync nodes with the current card list, preserving positions of cards
-  // that already have a node (including ones dragged/pinned earlier).
+  // Sync nodes with the current card list, preserving positions of nodes
+  // that already exist (including ones dragged/pinned earlier).
   useEffect(() => {
     const sim = simRef.current
     if (!sim) return
     const existing = new Map(nodesRef.current.map((n) => [n.id, n]))
-    const nodes = cards.map((card) => {
-      const prev = existing.get(card.id)
+
+    const place = (id: string, isHub: boolean, groupId: string | undefined, fx: number | null, fy: number | null) => {
+      const prev = existing.get(id)
       if (prev) {
-        // A pin coming from the backend (fx/fy set on the card) always wins.
-        prev.fx = card.fx ?? prev.fx ?? null
-        prev.fy = card.fy ?? prev.fy ?? null
+        prev.fx = fx ?? prev.fx ?? null
+        prev.fy = fy ?? prev.fy ?? null
         return prev
       }
       const angle = Math.random() * Math.PI * 2
       const radius = 40 + Math.random() * 120
       return {
-        id: card.id,
-        x: card.fx ?? width / 2 + Math.cos(angle) * radius,
-        y: card.fy ?? height / 2 + Math.sin(angle) * radius,
-        fx: card.fx ?? null,
-        fy: card.fy ?? null,
+        id,
+        isHub,
+        groupId,
+        x: fx ?? width / 2 + Math.cos(angle) * radius,
+        y: fy ?? height / 2 + Math.sin(angle) * radius,
+        fx: fx ?? null,
+        fy: fy ?? null,
       } satisfies SimNode
+    }
+
+    const cardNodes = cards.map((card) => place(card.id, false, undefined, card.fx, card.fy))
+
+    const groupIds = groupOf ? Array.from(new Set(cards.map((c) => groupOf(c.id)))) : []
+    const hubs = groupIds.map((groupId) => {
+      const pinned = groupId === centerGroup ? { x: width / 2, y: height / 2 } : null
+      return place(hubId(groupId), true, groupId, pinned?.x ?? null, pinned?.y ?? null)
     })
+
+    const nodes = [...hubs, ...cardNodes]
     nodesRef.current = nodes
     sim.nodes(nodes)
+    setHubNodes(hubs)
 
+    // Every card links to its own group's hub; every non-center hub also
+    // links to its parent group's hub, when that parent has a hub in this
+    // same aggregation — this is the line that makes "this folder lives
+    // inside that folder" visible, not just "this card lives in that
+    // folder".
+    const links: SimLink[] = []
     if (groupOf) {
-      const groupIds = Array.from(new Set(cards.map((c) => groupOf(c.id))))
-      const anchors = computeClusterAnchors(groupIds, centerGroup, width, height)
-      // Strong enough that each subgroup visibly holds together as its own
-      // territory rather than blending into one undifferentiated scatter —
-      // the whole point of clustering is to make structure legible.
-      sim.force('cluster', forceCluster(groupOf, anchors, 0.18))
-      setClusterAnchors(anchors)
-    } else {
-      sim.force('cluster', null)
-      setClusterAnchors(new Map())
+      for (const card of cards) {
+        links.push({ source: card.id, target: hubId(groupOf(card.id)) })
+      }
     }
+    const hubIds = new Set(groupIds)
+    for (const groupId of groupIds) {
+      if (groupId === centerGroup) continue
+      const parentId = groupParent?.(groupId)
+      if (parentId && hubIds.has(parentId)) {
+        links.push({ source: hubId(groupId), target: hubId(parentId) })
+      }
+    }
+    ;(sim.force('link') as ReturnType<typeof forceLink<SimNode, SimLink>>)?.links(links)
 
     sim.alpha(0.5).restart()
     setPositions(new Map(nodes.map((n) => [n.id, n])))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cards.map((c) => c.id).join(','), width, height, groupOf, centerGroup])
+  }, [cards.map((c) => c.id).join(','), width, height, groupOf, centerGroup, groupParent])
 
   const pause = useCallback(() => {
     simRef.current?.stop()
@@ -210,5 +227,5 @@ export function useCloudSimulation({ cards, width, height, groupOf, centerGroup 
     simRef.current?.alpha(0.4).restart()
   }, [])
 
-  return { positions, clusterAnchors, pause, resume, beginDrag, dragTo, endDrag, releasePin }
+  return { positions, hubNodes, pause, resume, beginDrag, dragTo, endDrag, releasePin }
 }

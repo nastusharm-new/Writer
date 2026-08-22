@@ -13,9 +13,11 @@ interface Props {
   // Root-to-active project ids — auto-expanded so the active project's own
   // cards (leaves under it) are never hidden behind a collapsed row.
   activeAncestorIds: string[]
+  projectTitleById: Map<string, string>
   onSelect: (id: string) => void
   onSelectCard: (projectId: string, cardId: string) => void
   onMoveCard: (cardId: string, sourceProjectId: string, targetProjectId: string) => void
+  onMoveProject: (projectId: string, targetParentId: string) => void
   onAddChild: (parentId: string | null) => void
   onRename: (id: string, title: string) => void
   onDelete: (id: string) => void
@@ -32,9 +34,11 @@ export function Sidebar({
   cardsByProject,
   activeCardId,
   activeAncestorIds,
+  projectTitleById,
   onSelect,
   onSelectCard,
   onMoveCard,
+  onMoveProject,
   onAddChild,
   onRename,
   onDelete,
@@ -42,6 +46,7 @@ export function Sidebar({
 }: Props) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [draggingCardId, setDraggingCardId] = useState<string | null>(null)
+  const [draggingProjectId, setDraggingProjectId] = useState<string | null>(null)
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
 
   // Whichever project is active (and everything above it) should always be
@@ -81,21 +86,33 @@ export function Sidebar({
   }
 
   const handleDragStart = (event: DragStartEvent) => {
-    setDraggingCardId((event.active.data.current?.cardId as string) ?? null)
+    const data = event.active.data.current
+    setDraggingCardId((data?.cardId as string) ?? null)
+    setDraggingProjectId((data?.projectId as string) ?? null)
   }
 
   const handleDragEnd = (event: DragEndEvent) => {
     setDraggingCardId(null)
+    setDraggingProjectId(null)
     const { active, over } = event
     if (!over) return
+    const overId = String(over.id)
+    if (!overId.startsWith('project:')) return
+    const targetProjectId = overId.slice('project:'.length)
+
     const cardId = active.data.current?.cardId as string | undefined
     const sourceProjectId = active.data.current?.sourceProjectId as string | undefined
-    const overId = String(over.id)
-    if (!cardId || !sourceProjectId || !overId.startsWith('project:')) return
-    onMoveCard(cardId, sourceProjectId, overId.slice('project:'.length))
+    if (cardId && sourceProjectId) {
+      onMoveCard(cardId, sourceProjectId, targetProjectId)
+      return
+    }
+
+    const draggedProjectId = active.data.current?.projectId as string | undefined
+    if (draggedProjectId) onMoveProject(draggedProjectId, targetProjectId)
   }
 
   const draggingCard = draggingCardId ? cardById.get(draggingCardId) : null
+  const draggingProjectTitle = draggingProjectId ? projectTitleById.get(draggingProjectId) : null
 
   return (
     <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
@@ -142,6 +159,7 @@ export function Sidebar({
 
       <DragOverlay>
         {draggingCard && <div className="tree-drag-overlay">{cardTabTitle(draggingCard.text)}</div>}
+        {draggingProjectTitle && <div className="tree-drag-overlay">{draggingProjectTitle}</div>}
       </DragOverlay>
     </DndContext>
   )

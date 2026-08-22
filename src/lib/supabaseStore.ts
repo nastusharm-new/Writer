@@ -70,6 +70,17 @@ export const supabaseStore: DataStore = {
     return data as Project
   },
 
+  async moveProject(id: string, parentId: string | null) {
+    const { data, error } = await client()
+      .from('projects')
+      .update({ parent_id: parentId })
+      .eq('id', id)
+      .select()
+      .single()
+    if (error) throw error
+    return data as Project
+  },
+
   async deleteProject(id: string) {
     // ON DELETE CASCADE on projects.parent_id and cards.project_id handles
     // descendant projects and their cards server-side.
