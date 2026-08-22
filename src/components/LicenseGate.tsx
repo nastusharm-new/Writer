@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { storeLicense, verifyLicenseKey } from '../lib/license'
+import { isExpired, storeLicense, verifyLicenseKey } from '../lib/license'
 
 interface Props {
   onActivated: () => void
@@ -24,6 +24,10 @@ export function LicenseGate({ onActivated }: Props) {
     setChecking(false)
     if (!payload) {
       setError('Ключ не подошёл — проверьте, что скопирован целиком, без пробелов и переносов.')
+      return
+    }
+    if (isExpired(payload)) {
+      setError('Пробный период по этому ключу уже закончился — нужен новый ключ.')
       return
     }
     storeLicense(payload)

@@ -16,6 +16,23 @@ export interface LicensePayload {
   email: string
   issuedAt: string
   orderId?: string
+  // Present only on trial keys (see scripts/generate-license.mjs's
+  // --trial-days) — a lifetime purchase key never has this field. The
+  // signature covers this field too, so a trial can't be edited into a
+  // permanent key without the private key.
+  expiresAt?: string
+}
+
+export function isExpired(payload: LicensePayload): boolean {
+  return payload.expiresAt != null && new Date(payload.expiresAt).getTime() <= Date.now()
+}
+
+// Whole days left, rounded up so "expires in 40 minutes" still reads as
+// "1 день" rather than 0 — null for a non-trial (permanent) license.
+export function daysRemaining(payload: LicensePayload): number | null {
+  if (!payload.expiresAt) return null
+  const msLeft = new Date(payload.expiresAt).getTime() - Date.now()
+  return Math.max(0, Math.ceil(msLeft / (24 * 60 * 60 * 1000)))
 }
 
 function base64UrlToBytes(b64url: string): Uint8Array<ArrayBuffer> {
@@ -74,4 +91,18 @@ export function storeLicense(payload: LicensePayload) {
 
 export function clearLicense() {
   localStorage.removeItem(STORAGE_KEY)
+}
+
+// What App.tsx actually gates on at every launch — a stored license only
+// counts if it's still there *and* (for a trial) hasn't run out yet. An
+// expired trial is cleared on the spot so it doesn't linger as stale
+// state; the app falls back to LicenseGate for a fresh key.
+export function getActiveLicense(): LicensePayload | null {
+  const stored = getStoredLicense()
+  if (!stored) return null
+  if (isExpired(stored)) {
+    clearLicense()
+    return null
+  }
+  return stored
 }

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { isTauri } from '@tauri-apps/api/core'
 import {
   DndContext,
   DragOverlay,
@@ -13,8 +14,18 @@ import {
 } from '@dnd-kit/core'
 import { ProjectTreeItem } from './ProjectTreeItem'
 import { cardTabTitle } from '../lib/timeline'
+import { daysRemaining, getActiveLicense } from '../lib/license'
 import type { ProjectTreeNode } from '../hooks/useProjectTree'
 import type { Card } from '../types'
+
+// A trial's remaining days, shown once at mount — only ever relevant on
+// the desktop build, and only for a trial key (a lifetime key has no
+// expiresAt, so this stays null for it).
+function trialDaysLeft(): number | null {
+  if (!isTauri()) return null
+  const license = getActiveLicense()
+  return license ? daysRemaining(license) : null
+}
 
 interface Props {
   tree: ProjectTreeNode[]
@@ -61,6 +72,7 @@ export function Sidebar({
   onSignOut,
 }: Props) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
+  const [trialLeft] = useState(trialDaysLeft)
   const [draggingCardId, setDraggingCardId] = useState<string | null>(null)
   const [draggingProjectId, setDraggingProjectId] = useState<string | null>(null)
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
@@ -192,6 +204,11 @@ export function Sidebar({
         </div>
 
         <div className="sidebar-footer">
+          {trialLeft != null && (
+            <span className="sidebar-trial-badge" title="Пробный период">
+              {trialLeft === 0 ? 'Пробный период истекает сегодня' : `Пробный период: ${trialLeft} дн.`}
+            </span>
+          )}
           <button type="button" className="sidebar-signout" onClick={onSignOut}>
             Выйти
           </button>

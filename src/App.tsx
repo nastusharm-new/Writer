@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { isTauri } from '@tauri-apps/api/core'
 import { useAuth } from './hooks/useAuth'
 import { useProjectTree } from './hooks/useProjectTree'
@@ -11,7 +11,7 @@ import { printManuscript } from './lib/exportPdf'
 import { manuscriptFromProjects } from './lib/manuscript'
 import { getSequence, getUnassigned } from './lib/timeline'
 import { dataStore } from './lib/dataStore'
-import { getStoredLicense } from './lib/license'
+import { getActiveLicense } from './lib/license'
 import { AuthScreen } from './components/AuthScreen'
 import { LicenseGate } from './components/LicenseGate'
 import { BoardView } from './components/BoardView'
@@ -23,8 +23,19 @@ import type { Card } from './types'
 const requiresLicense = isTauri()
 
 function App() {
-  const [licensed, setLicensed] = useState(() => !requiresLicense || getStoredLicense() != null)
+  const [licensed, setLicensed] = useState(() => !requiresLicense || getActiveLicense() != null)
   const { user, loading: authLoading, signInWithEmail, signOut } = useAuth()
+
+  // A trial key's clock keeps running whether or not the app happens to be
+  // open — someone who leaves it running across the expiry moment should
+  // still get locked out this session, not just on the next restart.
+  useEffect(() => {
+    if (!requiresLicense || !licensed) return
+    const id = setInterval(() => {
+      if (getActiveLicense() == null) setLicensed(false)
+    }, 30 * 60 * 1000)
+    return () => clearInterval(id)
+  }, [licensed])
 
   if (!licensed) {
     return <LicenseGate onActivated={() => setLicensed(true)} />
