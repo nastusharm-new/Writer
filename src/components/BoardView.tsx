@@ -79,10 +79,12 @@ export function BoardView({
   viewMode,
   onViewModeChange,
 }: Props) {
-  const [openTabs, setOpenTabs] = useState<OpenTab[]>(() =>
-    cards.length === 0 ? [{ key: makeTempKey(), cardId: null }] : [],
-  )
-  const [activeKey, setActiveKey] = useState<string>(() => (cards.length === 0 ? openTabs[0].key : viewMode))
+  // No auto-opened blank tab on an empty project — landing on a fresh
+  // project (the root one especially) should show its (empty) Cloud or
+  // Timeline, not force a "write something" screen nobody asked for. A
+  // card only gets created when the "+" is actually clicked.
+  const [openTabs, setOpenTabs] = useState<OpenTab[]>([])
+  const [activeKey, setActiveKey] = useState<string>(viewMode)
   // Switching to Cloud/Timeline updates both the local tab state and the
   // lifted preference in one place, so every call site stays in sync.
   const setView = useCallback(
