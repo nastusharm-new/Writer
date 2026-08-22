@@ -4,15 +4,15 @@ import { CARD_STATUSES, STATUS_COLOR, STATUS_LABEL, type CardStatus } from '../t
 interface Props {
   value: CardStatus
   onChange: (status: CardStatus) => void
-  size?: 'compact' | 'full'
   disabled?: boolean
 }
 
-// A row of tappable status dots — replaces the native <select> that made the
-// card footer look like a form control instead of a writing tool.
-export function StatusPicker({ value, onChange, size = 'full', disabled }: Props) {
+// A row of tappable, named status dots — the card editor's own maturity
+// picker, where there's room to show and choose among all four. The small
+// tile footer uses StatusSticker instead: one tag, not four dots to parse.
+export function StatusPicker({ value, onChange, disabled }: Props) {
   return (
-    <div className={`status-picker status-picker--${size}`}>
+    <div className="status-picker">
       {CARD_STATUSES.map((s) => (
         <button
           key={s}
@@ -30,7 +30,7 @@ export function StatusPicker({ value, onChange, size = 'full', disabled }: Props
           aria-pressed={value === s}
         >
           <span className="status-picker-swatch" />
-          {size === 'full' && <span className="status-picker-label">{STATUS_LABEL[s]}</span>}
+          <span className="status-picker-label">{STATUS_LABEL[s]}</span>
         </button>
       ))}
     </div>

@@ -176,7 +176,7 @@ export function CardTabPane({ card, onCreate, onPatch, onDelete, onCreated }: Pr
   return (
     <div className="card-pane">
       <div className="card-pane-topbar">
-        <StatusPicker value={status} onChange={handleStatusChange} size="full" />
+        <StatusPicker value={status} onChange={handleStatusChange} />
         {idRef.current && (
           <button type="button" className="card-pane-delete" onClick={handleDelete}>
             Удалить

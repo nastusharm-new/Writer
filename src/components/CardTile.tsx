@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react'
 import { motion } from 'framer-motion'
-import { StatusPicker } from './StatusPicker'
+import { StatusSticker } from './StatusSticker'
 import type { Card, CardStatus } from '../types'
 
 interface Props {
@@ -69,7 +69,7 @@ export function CardTile({
       )}
       <p className="card-tile-text">{card.text}</p>
       <div className="card-tile-footer">
-        <StatusPicker value={card.status} onChange={onStatusChange} size="compact" disabled={readOnly} />
+        <StatusSticker value={card.status} onChange={onStatusChange} disabled={readOnly} />
         {!readOnly && (
           <button
             type="button"
