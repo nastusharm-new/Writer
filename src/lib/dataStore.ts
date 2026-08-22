@@ -1,7 +1,9 @@
+import { isTauri } from '@tauri-apps/api/core'
 import type { Card, CardStatus, Project } from '../types'
 import { isSupabaseConfigured } from './supabase'
 import { localStore } from './localStore'
 import { supabaseStore } from './supabaseStore'
+import { tauriStore } from './tauriStore'
 
 export interface AuthUser {
   id: string
@@ -52,7 +54,11 @@ export interface DataStore {
   deleteCard(id: string): Promise<void>
 }
 
-// When VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY aren't set, the app runs
-// against a localStorage-backed store so it's usable without a backend.
-export const dataStore: DataStore = isSupabaseConfigured ? supabaseStore : localStore
+// The desktop build (Tauri) always stores data in a local file, full stop —
+// that's the whole point of a "no subscription, buy it once" app, and it
+// takes priority even if Supabase env vars happened to leak into that
+// build. The hosted web app keeps its existing choice: Supabase when
+// configured, otherwise a localStorage-backed store so it's usable without
+// a backend during development.
+export const dataStore: DataStore = isTauri() ? tauriStore : isSupabaseConfigured ? supabaseStore : localStore
 

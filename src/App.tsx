@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { isTauri } from '@tauri-apps/api/core'
 import { useAuth } from './hooks/useAuth'
 import { useProjectTree } from './hooks/useProjectTree'
 import { useCards } from './hooks/useCards'
@@ -10,13 +11,24 @@ import { printManuscript } from './lib/exportPdf'
 import { manuscriptFromProjects } from './lib/manuscript'
 import { getSequence, getUnassigned } from './lib/timeline'
 import { dataStore } from './lib/dataStore'
+import { getStoredLicense } from './lib/license'
 import { AuthScreen } from './components/AuthScreen'
+import { LicenseGate } from './components/LicenseGate'
 import { BoardView } from './components/BoardView'
 import { Sidebar } from './components/Sidebar'
 import type { Card } from './types'
 
+// The license gate only exists in the desktop build — the hosted web app
+// has never charged anyone and shouldn't suddenly start demanding a key.
+const requiresLicense = isTauri()
+
 function App() {
+  const [licensed, setLicensed] = useState(() => !requiresLicense || getStoredLicense() != null)
   const { user, loading: authLoading, signInWithEmail, signOut } = useAuth()
+
+  if (!licensed) {
+    return <LicenseGate onActivated={() => setLicensed(true)} />
+  }
 
   if (authLoading) {
     return <div className="app-loading">Загрузка…</div>
