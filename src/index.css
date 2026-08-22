@@ -222,6 +222,55 @@ select {
   outline: none;
 }
 
+.card-pane-body.is-drag-over {
+  background: var(--accent-bg);
+}
+
+.card-pane-images {
+  width: 100%;
+  max-width: 640px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding-top: 20px;
+}
+
+.card-pane-image {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  flex: none;
+}
+
+.card-pane-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  cursor: zoom-in;
+  display: block;
+}
+
+.card-pane-image-remove {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 10px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
 /* ---------- App shell: sidebar + main pane ---------- */
 
 .app-shell {
@@ -435,6 +484,27 @@ select {
   min-height: 0;
 }
 
+.pane-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px 0;
+  font-size: 12px;
+  color: var(--text);
+  opacity: 0.55;
+}
+
+.pane-breadcrumb-item:last-child {
+  color: var(--text-h);
+  font-weight: 600;
+  opacity: 1;
+}
+
+.pane-breadcrumb-sep {
+  margin-right: 6px;
+  opacity: 0.6;
+}
+
 .pane-header {
   display: flex;
   align-items: stretch;
@@ -468,6 +538,147 @@ select {
 .pane-compile:hover {
   color: var(--text-h);
   border-color: var(--text-h);
+}
+
+.pane-archive-toggle {
+  flex: none;
+  align-self: center;
+  margin: 0 0 0 10px;
+  padding: 6px 12px;
+  border: none;
+  background: none;
+  color: var(--text);
+  opacity: 0.6;
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.pane-archive-toggle:hover {
+  opacity: 1;
+  color: var(--text-h);
+}
+
+/* ---------- Archive panel ---------- */
+
+.archive-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 300px;
+  max-width: 80vw;
+  background: var(--card-bg);
+  border-left: 1px solid var(--border);
+  box-shadow: var(--shadow-lift);
+  display: flex;
+  flex-direction: column;
+  z-index: 20;
+}
+
+.archive-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  font-weight: 600;
+  color: var(--text-h);
+}
+
+.archive-panel-close {
+  border: none;
+  background: none;
+  color: var(--text);
+  opacity: 0.55;
+  font-size: 13px;
+}
+
+.archive-panel-close:hover {
+  opacity: 1;
+}
+
+.archive-panel-empty {
+  padding: 20px 16px;
+  font-size: 13px;
+  color: var(--text);
+  opacity: 0.6;
+}
+
+.archive-list {
+  list-style: none;
+  overflow-y: auto;
+  padding: 6px 0;
+}
+
+.archive-item {
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.archive-item-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.archive-item-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.archive-item-title {
+  font-size: 13.5px;
+  color: var(--text-h);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.archive-item-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.archive-item-restore,
+.archive-item-destroy {
+  border: none;
+  background: none;
+  font-size: 12px;
+  padding: 2px 0;
+}
+
+.archive-item-restore {
+  color: var(--accent);
+}
+
+.archive-item-destroy {
+  color: var(--text);
+  opacity: 0.5;
+}
+
+.archive-item-destroy:hover {
+  opacity: 1;
+  color: #e05252;
+}
+
+/* ---------- Toast ---------- */
+
+.board-toast {
+  position: absolute;
+  left: 50%;
+  bottom: 28px;
+  transform: translateX(-50%);
+  background: var(--text-h);
+  color: var(--bg);
+  font-size: 13px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  box-shadow: var(--shadow-lift);
+  z-index: 30;
 }
 
 .tab-strip .tab {
@@ -598,6 +809,17 @@ select {
   color: var(--accent);
 }
 
+.card-tile-image-badge {
+  position: absolute;
+  top: 8px;
+  left: 10px;
+  font-size: 10px;
+  opacity: 0.65;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
 .card-tile-text {
   flex: 1;
   font-family: var(--serif);
@@ -700,17 +922,40 @@ select {
   transform-origin: 0 0;
 }
 
-.cloud-cluster-label {
+/* One "territory" per project feeding into this cloud (the active project
+   itself plus every nested subgroup) — a visible, labeled boundary instead
+   of cards just scattered with no indication of what groups with what. */
+.cloud-cluster-halo {
   position: absolute;
   transform: translate(-50%, -50%);
+  border-radius: 50%;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--text) 4%, transparent);
+  border: 1px dashed color-mix(in srgb, var(--text) 14%, transparent);
+}
+
+.cloud-cluster-halo.is-active {
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.cloud-cluster-label {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
   font-size: 12px;
   font-weight: 600;
   color: var(--text);
-  opacity: 0.35;
+  opacity: 0.4;
   text-transform: uppercase;
   letter-spacing: 0.6px;
   pointer-events: none;
   white-space: nowrap;
+}
+
+.cloud-cluster-label.is-active {
+  opacity: 0.9;
+  color: var(--accent);
 }
 
 .cloud-zoom {

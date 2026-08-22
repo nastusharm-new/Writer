@@ -28,7 +28,11 @@ export function compileToText(projects: Project[], cardsByProject: Map<string, C
 
     const cards = cardsByProject.get(projectId) ?? []
     for (const card of [...getSequence(cards), ...getUnassigned(cards)]) {
-      lines.push(card.text.trim(), '')
+      lines.push(card.text.trim())
+      if (card.images.length > 0) {
+        lines.push(`[+ ${card.images.length} изображени${card.images.length === 1 ? 'е' : 'я'}]`)
+      }
+      lines.push('')
     }
 
     for (const child of children.get(projectId) ?? []) {

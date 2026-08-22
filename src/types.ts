@@ -37,6 +37,12 @@ export interface Card {
   manual_order: number | null
   fx: number | null
   fy: number | null
+  // Sketches/reference images attached to the card, stored as data URIs.
+  images: string[]
+  // Soft-delete: set when the card is "deleted" from the board. It keeps
+  // living in the archive rather than being destroyed outright, so an
+  // accidental delete (or a change of mind) isn't permanent.
+  archived_at: string | null
 }
 
 export type CardLinkType = 'sequence'

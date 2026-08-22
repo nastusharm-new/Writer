@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { DndContext, DragOverlay, PointerSensor, useSensor, useSensors, type DragEndEvent, type DragStartEvent } from '@dnd-kit/core'
 import { ProjectTreeItem } from './ProjectTreeItem'
 import { cardTabTitle } from '../lib/timeline'
@@ -10,6 +10,9 @@ interface Props {
   activeProjectId: string | null
   cardsByProject: Map<string, Card[]>
   activeCardId: string | null
+  // Root-to-active project ids — auto-expanded so the active project's own
+  // cards (leaves under it) are never hidden behind a collapsed row.
+  activeAncestorIds: string[]
   onSelect: (id: string) => void
   onSelectCard: (projectId: string, cardId: string) => void
   onMoveCard: (cardId: string, sourceProjectId: string, targetProjectId: string) => void
@@ -28,6 +31,7 @@ export function Sidebar({
   activeProjectId,
   cardsByProject,
   activeCardId,
+  activeAncestorIds,
   onSelect,
   onSelectCard,
   onMoveCard,
@@ -39,6 +43,25 @@ export function Sidebar({
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [draggingCardId, setDraggingCardId] = useState<string | null>(null)
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
+
+  // Whichever project is active (and everything above it) should always be
+  // open — its own cards render as leaves underneath it, and a collapsed
+  // row made them look like they didn't exist at all.
+  const ancestorKey = activeAncestorIds.join(',')
+  useEffect(() => {
+    if (!ancestorKey) return
+    setExpanded((prev) => {
+      let changed = false
+      const next = new Set(prev)
+      for (const id of ancestorKey.split(',')) {
+        if (!next.has(id)) {
+          next.add(id)
+          changed = true
+        }
+      }
+      return changed ? next : prev
+    })
+  }, [ancestorKey])
 
   const cardById = useMemo(() => {
     const map = new Map<string, Card>()

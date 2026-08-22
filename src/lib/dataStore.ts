@@ -9,7 +9,7 @@ export interface AuthUser {
 }
 
 export type CardPatch = Partial<
-  Pick<Card, 'text' | 'status' | 'manual_order' | 'fx' | 'fy'>
+  Pick<Card, 'text' | 'status' | 'manual_order' | 'fx' | 'fy' | 'images'>
 >
 
 /**
@@ -33,12 +33,18 @@ export interface DataStore {
   // Every card across every one of the user's projects, for showing cards
   // as clickable leaves in the sidebar tree without a per-project fetch.
   listCardsForUser(userId: string): Promise<Card[]>
-  createCard(projectId: string, text: string, status: CardStatus): Promise<Card>
+  createCard(projectId: string, text: string, status: CardStatus, images?: string[]): Promise<Card>
   updateCard(id: string, patch: CardPatch): Promise<Card>
   // Reassigns a card to a different project — dragging it onto another
   // group in the sidebar tree. Clears manual_order/fx/fy since those only
   // mean anything relative to the sequence/cloud it was leaving.
   moveCard(id: string, projectId: string): Promise<Card>
+  // Soft-delete: the card leaves the board but keeps living in the
+  // project's archive rather than being destroyed outright.
+  archiveCard(id: string): Promise<void>
+  restoreCard(id: string): Promise<Card>
+  listArchivedCards(projectId: string): Promise<Card[]>
+  // Permanent removal — only ever offered from within the archive itself.
   deleteCard(id: string): Promise<void>
 }
 

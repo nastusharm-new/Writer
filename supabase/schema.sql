@@ -50,11 +50,17 @@ create table cards (
   -- "Pinned" position in the cloud's force simulation (d3-force fixed
   -- position). Null means the card is free to move with the simulation.
   fx double precision,
-  fy double precision
+  fy double precision,
+  -- Sketches/reference images attached to the card, as data URIs.
+  images jsonb not null default '[]'::jsonb,
+  -- Soft-delete: set when the card is "deleted" from the board. It moves
+  -- to the project's archive instead of being destroyed outright.
+  archived_at timestamptz
 );
 
 create index cards_project_id_idx on cards (project_id);
 create index cards_project_manual_order_idx on cards (project_id, manual_order);
+create index cards_archived_at_idx on cards (project_id, archived_at);
 
 alter table cards enable row level security;
 

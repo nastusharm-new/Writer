@@ -155,7 +155,10 @@ export function useCloudSimulation({ cards, width, height, groupOf, centerGroup 
     if (groupOf) {
       const groupIds = Array.from(new Set(cards.map((c) => groupOf(c.id))))
       const anchors = computeClusterAnchors(groupIds, centerGroup, width, height)
-      sim.force('cluster', forceCluster(groupOf, anchors, 0.05))
+      // Strong enough that each subgroup visibly holds together as its own
+      // territory rather than blending into one undifferentiated scatter —
+      // the whole point of clustering is to make structure legible.
+      sim.force('cluster', forceCluster(groupOf, anchors, 0.18))
       setClusterAnchors(anchors)
     } else {
       sim.force('cluster', null)

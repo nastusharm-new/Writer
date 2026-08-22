@@ -46,9 +46,10 @@ export function useCards(projectId: string | undefined) {
   }, [])
 
   const addCard = useCallback(
-    async (text: string, status: CardStatus = 'spark') => {
-      if (!projectId || !text.trim()) return
-      const card = await dataStore.createCard(projectId, text.trim(), status)
+    async (text: string, status: CardStatus = 'spark', images: string[] = []) => {
+      const trimmed = text.trim()
+      if (!projectId || (!trimmed && images.length === 0)) return
+      const card = await dataStore.createCard(projectId, trimmed, status, images)
       setCards((prev) => [...prev, card])
       return card
     },
@@ -69,13 +70,15 @@ export function useCards(projectId: string | undefined) {
     [setCards],
   )
 
+  // "Delete" from the board is a soft delete — the card moves to the
+  // project's archive rather than being destroyed outright.
   const removeCard = useCallback(
     async (id: string) => {
       setCards((prev) => prev.filter((c) => c.id !== id))
       try {
-        await dataStore.deleteCard(id)
+        await dataStore.archiveCard(id)
       } catch (err) {
-        console.error('Failed to delete card', err)
+        console.error('Failed to archive card', err)
       }
     },
     [setCards],

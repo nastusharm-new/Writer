@@ -3,7 +3,7 @@ import { useAuth } from './hooks/useAuth'
 import { useProjectTree } from './hooks/useProjectTree'
 import { useCards } from './hooks/useCards'
 import { useAllCards } from './hooks/useAllCards'
-import { collectDescendantIds } from './lib/projectTree'
+import { collectDescendantIds, getAncestorPath } from './lib/projectTree'
 import { compileToText, downloadTextFile } from './lib/compile'
 import { dataStore } from './lib/dataStore'
 import { AuthScreen } from './components/AuthScreen'
@@ -71,6 +71,17 @@ function Workspace({ userId, onSignOut }: { userId: string; onSignOut: () => voi
     return Array.from(byId.values())
   }, [cardsByProject, descendantIds])
   const projectTitleById = useMemo(() => new Map(projects.map((p) => [p.id, p.title])), [projects])
+  // "Where am I" — the sidebar alone doesn't make this obvious once a
+  // project is nested a few levels deep or the tree is scrolled away.
+  const activeAncestors = useMemo(
+    () => (activeProjectId ? getAncestorPath(projects, activeProjectId) : []),
+    [projects, activeProjectId],
+  )
+  const breadcrumbPath = useMemo(() => activeAncestors.map((p) => p.title), [activeAncestors])
+  // Ids to auto-expand in the sidebar tree — otherwise the active project's
+  // own cards (rendered as leaves under it) stay hidden behind a collapsed
+  // row nobody thought to click.
+  const activeAncestorIds = useMemo(() => activeAncestors.map((p) => p.id), [activeAncestors])
 
   if (treeLoading || !activeProjectId) {
     return <div className="app-loading">Загрузка…</div>
@@ -117,6 +128,7 @@ function Workspace({ userId, onSignOut }: { userId: string; onSignOut: () => voi
         activeProjectId={activeProjectId}
         cardsByProject={cardsByProject}
         activeCardId={activeCardId}
+        activeAncestorIds={activeAncestorIds}
         onSelect={setActiveProjectId}
         onSelectCard={handleSelectCard}
         onMoveCard={handleMoveCard}
@@ -138,11 +150,13 @@ function Workspace({ userId, onSignOut }: { userId: string; onSignOut: () => voi
             addCard={addCard}
             patchCard={patchCard}
             removeCard={removeCard}
+            refetchCards={refetchActiveCards}
             onOpenForeignCard={handleSelectCard}
             initialOpenCardId={pendingCardId}
             onConsumedInitialCard={() => setPendingCardId(null)}
             onActiveCardChange={setActiveCardId}
             onCompile={handleCompile}
+            breadcrumbPath={breadcrumbPath}
           />
         )}
       </main>

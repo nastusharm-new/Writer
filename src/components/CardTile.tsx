@@ -62,6 +62,11 @@ export function CardTile({
           ●
         </span>
       )}
+      {card.images.length > 0 && (
+        <span className="card-tile-image-badge" title={`Изображений: ${card.images.length}`}>
+          🖼 {card.images.length}
+        </span>
+      )}
       <p className="card-tile-text">{card.text}</p>
       <div className="card-tile-footer">
         <StatusPicker value={card.status} onChange={onStatusChange} size="compact" disabled={readOnly} />

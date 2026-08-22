@@ -3,7 +3,7 @@ import type { PointerEvent as ReactPointerEvent } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { CardTile } from './CardTile'
 import { getSequence } from '../lib/timeline'
-import type { ClusterAnchor, SimNode } from '../hooks/useCloudSimulation'
+import { CARD_RADIUS, type ClusterAnchor, type SimNode } from '../hooks/useCloudSimulation'
 import type { Card, CardStatus } from '../types'
 import type { CardPatch } from '../lib/dataStore'
 
@@ -143,7 +143,18 @@ export function CloudView({
   const threadPoints = sequence
     .map((c) => positions.get(c.id))
     .filter((p): p is SimNode => Boolean(p))
-  const foreignClusters = Array.from(clusterAnchors.entries()).filter(([groupId]) => groupId !== activeProjectId)
+
+  // How many cards sit in each group, so a cluster's halo actually scales
+  // with what's inside it instead of every territory looking the same size.
+  const clusterCounts = new Map<string, number>()
+  for (const card of cards) {
+    clusterCounts.set(card.project_id, (clusterCounts.get(card.project_id) ?? 0) + 1)
+  }
+  const clusters = Array.from(clusterAnchors.entries()).map(([groupId, anchor]) => {
+    const count = clusterCounts.get(groupId) ?? 0
+    const radius = Math.max(CARD_RADIUS * 1.3, Math.sqrt(count) * CARD_RADIUS * 1.05)
+    return { groupId, anchor, radius, isActive: groupId === activeProjectId }
+  })
 
   return (
     <div
@@ -169,13 +180,23 @@ export function CloudView({
           </svg>
         )}
 
-        {foreignClusters.map(([groupId, anchor]) => (
+        {clusters.map(({ groupId, anchor, radius, isActive }) => (
           <div
             key={groupId}
-            className="cloud-cluster-label"
-            style={{ left: anchor.x, top: anchor.y }}
+            className={`cloud-cluster-halo ${isActive ? 'is-active' : ''}`}
+            style={{
+              left: anchor.x,
+              top: anchor.y,
+              width: radius * 2,
+              height: radius * 2,
+            }}
           >
-            {projectTitleById.get(groupId) ?? 'Без названия'}
+            <span
+              className={`cloud-cluster-label ${isActive ? 'is-active' : ''}`}
+              style={{ top: -radius - 14 }}
+            >
+              {projectTitleById.get(groupId) ?? 'Без названия'}
+            </span>
           </div>
         ))}
 

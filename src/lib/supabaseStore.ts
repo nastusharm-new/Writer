@@ -82,6 +82,7 @@ export const supabaseStore: DataStore = {
       .from('cards')
       .select('*')
       .eq('project_id', projectId)
+      .is('archived_at', null)
       .order('created_at', { ascending: true })
     if (error) throw error
     return (data ?? []) as Card[]
@@ -92,16 +93,19 @@ export const supabaseStore: DataStore = {
     // guarantees isolation, this just avoids an N-query fan-out per project.
     const { data, error } = await client()
       .from('cards')
-      .select('id, project_id, text, status, created_at, manual_order, fx, fy, projects!inner(user_id)')
+      .select(
+        'id, project_id, text, status, created_at, manual_order, fx, fy, images, archived_at, projects!inner(user_id)',
+      )
       .eq('projects.user_id', userId)
+      .is('archived_at', null)
     if (error) throw error
     return (data ?? []).map(({ projects: _projects, ...card }) => card) as Card[]
   },
 
-  async createCard(projectId: string, text: string, status: CardStatus) {
+  async createCard(projectId: string, text: string, status: CardStatus, images: string[] = []) {
     const { data, error } = await client()
       .from('cards')
-      .insert({ project_id: projectId, text, status })
+      .insert({ project_id: projectId, text, status, images })
       .select()
       .single()
     if (error) throw error
@@ -128,6 +132,36 @@ export const supabaseStore: DataStore = {
       .single()
     if (error) throw error
     return data as Card
+  },
+
+  async archiveCard(id: string) {
+    const { error } = await client()
+      .from('cards')
+      .update({ archived_at: new Date().toISOString() })
+      .eq('id', id)
+    if (error) throw error
+  },
+
+  async restoreCard(id: string) {
+    const { data, error } = await client()
+      .from('cards')
+      .update({ archived_at: null })
+      .eq('id', id)
+      .select()
+      .single()
+    if (error) throw error
+    return data as Card
+  },
+
+  async listArchivedCards(projectId: string) {
+    const { data, error } = await client()
+      .from('cards')
+      .select('*')
+      .eq('project_id', projectId)
+      .not('archived_at', 'is', null)
+      .order('archived_at', { ascending: false })
+    if (error) throw error
+    return (data ?? []) as Card[]
   },
 
   async deleteCard(id: string) {

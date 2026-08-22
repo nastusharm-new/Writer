@@ -107,7 +107,7 @@ export const localStore: DataStore = {
   async listCards(projectId: string) {
     const cards = read<Card[]>(LS_CARDS, [])
     return cards
-      .filter((c) => c.project_id === projectId)
+      .filter((c) => c.project_id === projectId && !c.archived_at)
       .sort((a, b) => a.created_at.localeCompare(b.created_at))
   },
 
@@ -115,10 +115,10 @@ export const localStore: DataStore = {
     const projects = read<Project[]>(LS_PROJECTS, [])
     const ownIds = new Set(projects.filter((p) => p.user_id === userId).map((p) => p.id))
     const cards = read<Card[]>(LS_CARDS, [])
-    return cards.filter((c) => ownIds.has(c.project_id))
+    return cards.filter((c) => ownIds.has(c.project_id) && !c.archived_at)
   },
 
-  async createCard(projectId: string, text: string, status: CardStatus) {
+  async createCard(projectId: string, text: string, status: CardStatus, images: string[] = []) {
     const cards = read<Card[]>(LS_CARDS, [])
     const card: Card = {
       id: uuid(),
@@ -129,6 +129,8 @@ export const localStore: DataStore = {
       manual_order: null,
       fx: null,
       fy: null,
+      images,
+      archived_at: null,
     }
     write(LS_CARDS, [...cards, card])
     return card
@@ -158,6 +160,34 @@ export const localStore: DataStore = {
     write(LS_CARDS, next)
     if (!updated) throw new Error('card not found')
     return updated
+  },
+
+  async archiveCard(id: string) {
+    const cards = read<Card[]>(LS_CARDS, [])
+    write(
+      LS_CARDS,
+      cards.map((c) => (c.id === id ? { ...c, archived_at: new Date().toISOString() } : c)),
+    )
+  },
+
+  async restoreCard(id: string) {
+    const cards = read<Card[]>(LS_CARDS, [])
+    let updated: Card | undefined
+    const next = cards.map((c) => {
+      if (c.id !== id) return c
+      updated = { ...c, archived_at: null }
+      return updated
+    })
+    write(LS_CARDS, next)
+    if (!updated) throw new Error('card not found')
+    return updated
+  },
+
+  async listArchivedCards(projectId: string) {
+    const cards = read<Card[]>(LS_CARDS, [])
+    return cards
+      .filter((c) => c.project_id === projectId && c.archived_at)
+      .sort((a, b) => (b.archived_at ?? '').localeCompare(a.archived_at ?? ''))
   },
 
   async deleteCard(id: string) {

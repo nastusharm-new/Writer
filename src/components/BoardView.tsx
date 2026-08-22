@@ -1,12 +1,14 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { CloudView } from './CloudView'
 import { TimelineView } from './TimelineView'
 import { TabStrip } from './TabStrip'
 import { PreviewBar } from './PreviewBar'
 import { CardTabPane } from './CardTabPane'
+import { ArchivePanel } from './ArchivePanel'
 import { cardTabTitle, timelinePositionLabel } from '../lib/timeline'
 import { useCloudSimulation } from '../hooks/useCloudSimulation'
 import { useElementSize } from '../hooks/useElementSize'
+import { useArchive } from '../hooks/useArchive'
 import type { Card, CardStatus } from '../types'
 import type { CardPatch } from '../lib/dataStore'
 
@@ -17,9 +19,13 @@ interface Props {
   // display only; tabs/timeline/CRUD stay scoped to `cards` alone.
   aggregatedCards: Card[]
   projectTitleById: Map<string, string>
-  addCard: (text: string, status?: CardStatus) => Promise<Card | undefined>
+  addCard: (text: string, status?: CardStatus, images?: string[]) => Promise<Card | undefined>
   patchCard: (id: string, patch: CardPatch) => void
   removeCard: (id: string) => void
+  // Re-pulls the active project's cards from the store — needed after
+  // restoring a card from the archive, which mutates it from outside the
+  // optimistic `cards` list this pane otherwise trusts.
+  refetchCards: () => void
   onOpenForeignCard: (projectId: string, cardId: string) => void
   // Set when a card was clicked in the sidebar tree — opens/focuses that
   // card's tab, whether or not it was already open.
@@ -27,6 +33,10 @@ interface Props {
   onConsumedInitialCard?: () => void
   onActiveCardChange?: (id: string | null) => void
   onCompile: () => void
+  // Root-to-active chain of project titles — shown as a persistent "where
+  // am I" strip, since the sidebar alone stops being enough once a project
+  // is nested a few levels deep or scrolled out of view.
+  breadcrumbPath: string[]
 }
 
 interface OpenTab {
@@ -46,17 +56,33 @@ export function BoardView({
   addCard,
   patchCard,
   removeCard,
+  refetchCards,
   onOpenForeignCard,
   initialOpenCardId,
   onConsumedInitialCard,
   onActiveCardChange,
   onCompile,
+  breadcrumbPath,
 }: Props) {
   const [openTabs, setOpenTabs] = useState<OpenTab[]>(() =>
     cards.length === 0 ? [{ key: makeTempKey(), cardId: null }] : [],
   )
   const [activeKey, setActiveKey] = useState<string>(() => (cards.length === 0 ? openTabs[0].key : 'cloud'))
   const [hoveredId, setHoveredId] = useState<string | null>(null)
+  const [archiveOpen, setArchiveOpen] = useState(false)
+  const archive = useArchive(activeProjectId, archiveOpen)
+  const [toast, setToast] = useState<string | null>(null)
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const showToast = useCallback((message: string) => {
+    if (toastTimer.current) clearTimeout(toastTimer.current)
+    setToast(message)
+    toastTimer.current = setTimeout(() => setToast(null), 3000)
+  }, [])
+
+  useEffect(() => () => {
+    if (toastTimer.current) clearTimeout(toastTimer.current)
+  }, [])
 
   // The simulation lives here, above every tab, so switching away and back
   // doesn't reset it — cards keep the positions they had (per the brief:
@@ -148,6 +174,12 @@ export function BoardView({
     removeCard(id)
     const tab = openTabs.find((t) => t.cardId === id)
     if (tab) closeTab(tab.key)
+    showToast('Убрали пока в архив')
+  }
+
+  const handleRestoreCard = async (id: string) => {
+    await archive.restore(id)
+    refetchCards()
   }
 
   const cardTabs = openTabs.map((tab) => {
@@ -165,6 +197,14 @@ export function BoardView({
 
   return (
     <div className="board">
+      <div className="pane-breadcrumb">
+        {breadcrumbPath.map((title, i) => (
+          <span key={i} className="pane-breadcrumb-item">
+            {i > 0 && <span className="pane-breadcrumb-sep">›</span>}
+            {title}
+          </span>
+        ))}
+      </div>
       <div className="pane-header">
         <TabStrip
           activeKey={activeKey}
@@ -175,6 +215,14 @@ export function BoardView({
           onCloseCard={closeTab}
           onNewTab={openNewTab}
         />
+        <button
+          type="button"
+          className="pane-archive-toggle"
+          onClick={() => setArchiveOpen((v) => !v)}
+          title="Удалённые карточки"
+        >
+          Архив
+        </button>
         <button
           type="button"
           className="pane-compile"
@@ -235,6 +283,18 @@ export function BoardView({
         {activeKey === 'cloud' && (
           <PreviewBar cardCount={cards.length} onSwitchToTimeline={() => setActiveKey('timeline')} />
         )}
+
+        {archiveOpen && (
+          <ArchivePanel
+            cards={archive.cards}
+            loading={archive.loading}
+            onRestore={handleRestoreCard}
+            onDestroy={archive.destroy}
+            onClose={() => setArchiveOpen(false)}
+          />
+        )}
+
+        {toast && <div className="board-toast">{toast}</div>}
       </div>
     </div>
   )
