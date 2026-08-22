@@ -16,6 +16,10 @@ interface Props {
   onHoverEnd?: () => void
   pinned?: boolean
   onReleasePin?: () => void
+  // A card pulled into view from a nested subgroup (see CloudView's
+  // aggregated cloud): shown, clickable to jump to it, but not editable
+  // from here — that belongs to its own project's tabs.
+  readOnly?: boolean
 }
 
 /**
@@ -37,13 +41,14 @@ export function CardTile({
   onHoverEnd,
   pinned,
   onReleasePin,
+  readOnly,
 }: Props) {
   return (
     <motion.div
       ref={setNodeRef}
       layoutId={card.id}
       layout
-      className={`card-tile status-${card.status} ${className ?? ''}`}
+      className={`card-tile status-${card.status} ${readOnly ? 'is-readonly' : ''} ${className ?? ''}`}
       style={style}
       onHoverStart={onHoverStart}
       onHoverEnd={onHoverEnd}
@@ -59,19 +64,21 @@ export function CardTile({
       )}
       <p className="card-tile-text">{card.text}</p>
       <div className="card-tile-footer">
-        <StatusPicker value={card.status} onChange={onStatusChange} size="compact" />
-        <button
-          type="button"
-          className="card-tile-delete"
-          onClick={(e) => {
-            e.stopPropagation()
-            onDelete()
-          }}
-          onPointerDown={(e) => e.stopPropagation()}
-          aria-label="Удалить карточку"
-        >
-          ✕
-        </button>
+        <StatusPicker value={card.status} onChange={onStatusChange} size="compact" disabled={readOnly} />
+        {!readOnly && (
+          <button
+            type="button"
+            className="card-tile-delete"
+            onClick={(e) => {
+              e.stopPropagation()
+              onDelete()
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+            aria-label="Удалить карточку"
+          >
+            ✕
+          </button>
+        )}
       </div>
     </motion.div>
   )

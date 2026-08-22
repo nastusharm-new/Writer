@@ -5,11 +5,12 @@ interface Props {
   value: CardStatus
   onChange: (status: CardStatus) => void
   size?: 'compact' | 'full'
+  disabled?: boolean
 }
 
 // A row of tappable status dots — replaces the native <select> that made the
 // card footer look like a form control instead of a writing tool.
-export function StatusPicker({ value, onChange, size = 'full' }: Props) {
+export function StatusPicker({ value, onChange, size = 'full', disabled }: Props) {
   return (
     <div className={`status-picker status-picker--${size}`}>
       {CARD_STATUSES.map((s) => (
@@ -18,6 +19,7 @@ export function StatusPicker({ value, onChange, size = 'full' }: Props) {
           type="button"
           className={`status-picker-dot ${value === s ? 'is-active' : ''}`}
           style={{ '--dot-color': STATUS_COLOR[s] } as CSSProperties}
+          disabled={disabled}
           onClick={(e) => {
             e.stopPropagation()
             onChange(s)

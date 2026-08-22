@@ -641,6 +641,70 @@ select {
   inset: 0;
   background: var(--canvas-bg);
   overflow: hidden;
+  cursor: grab;
+  touch-action: none;
+}
+
+.cloud-canvas:active {
+  cursor: grabbing;
+}
+
+.cloud-canvas-layer {
+  position: absolute;
+  inset: 0;
+  transform-origin: 0 0;
+}
+
+.cloud-cluster-label {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  opacity: 0.35;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.cloud-zoom {
+  position: absolute;
+  left: 20px;
+  bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text);
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 4px 10px;
+  box-shadow: var(--shadow);
+}
+
+.cloud-zoom button {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--canvas-bg);
+  color: var(--text-h);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.card-tile.is-foreign {
+  opacity: 0.72;
+  border-style: dashed;
+  cursor: pointer;
+}
+
+.status-picker-dot:disabled {
+  cursor: default;
 }
 
 .cloud-ghost-preview {

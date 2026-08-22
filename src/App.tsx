@@ -1,11 +1,13 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useAuth } from './hooks/useAuth'
 import { useProjectTree } from './hooks/useProjectTree'
 import { useCards } from './hooks/useCards'
 import { useAllCards } from './hooks/useAllCards'
+import { collectDescendantIds } from './lib/projectTree'
 import { AuthScreen } from './components/AuthScreen'
 import { BoardView } from './components/BoardView'
 import { Sidebar } from './components/Sidebar'
+import type { Card } from './types'
 
 function App() {
   const { user, loading: authLoading, signInWithEmail, signOut } = useAuth()
@@ -24,6 +26,7 @@ function App() {
 function Workspace({ userId, onSignOut }: { userId: string; onSignOut: () => void }) {
   const {
     tree,
+    projects,
     loading: treeLoading,
     activeProjectId,
     setActiveProjectId,
@@ -38,6 +41,27 @@ function Workspace({ userId, onSignOut }: { userId: string; onSignOut: () => voi
   // its project is the active one (see BoardView's initialOpenCardId).
   const [pendingCardId, setPendingCardId] = useState<string | null>(null)
   const [activeCardId, setActiveCardId] = useState<string | null>(null)
+
+  // The active project's cloud aggregates every nested subgroup's cards
+  // too (a "часть" or "сцена" is a project of its own, but its cards still
+  // belong visually to the whole it's part of) — everything else in the
+  // app (tabs, timeline, CRUD) stays scoped to the active project alone.
+  const descendantIds = useMemo(
+    () => (activeProjectId ? collectDescendantIds(projects, activeProjectId) : []),
+    [projects, activeProjectId],
+  )
+  const aggregatedCards = useMemo(() => {
+    // Keyed by id: guards against the same card briefly appearing under two
+    // entries while cardsByProject and activeProjectId settle after a
+    // project switch (the live overlay and the snapshot can overlap for
+    // one render).
+    const byId = new Map<string, Card>()
+    for (const id of descendantIds) {
+      for (const card of cardsByProject.get(id) ?? []) byId.set(card.id, card)
+    }
+    return Array.from(byId.values())
+  }, [cardsByProject, descendantIds])
+  const projectTitleById = useMemo(() => new Map(projects.map((p) => [p.id, p.title])), [projects])
 
   if (treeLoading || !activeProjectId) {
     return <div className="app-loading">Загрузка…</div>
@@ -68,10 +92,14 @@ function Workspace({ userId, onSignOut }: { userId: string; onSignOut: () => voi
         ) : (
           <BoardView
             key={activeProjectId}
+            activeProjectId={activeProjectId}
             cards={cards}
+            aggregatedCards={aggregatedCards}
+            projectTitleById={projectTitleById}
             addCard={addCard}
             patchCard={patchCard}
             removeCard={removeCard}
+            onOpenForeignCard={handleSelectCard}
             initialOpenCardId={pendingCardId}
             onConsumedInitialCard={() => setPendingCardId(null)}
             onActiveCardChange={setActiveCardId}

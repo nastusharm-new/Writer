@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { CloudView } from './CloudView'
 import { TimelineView } from './TimelineView'
 import { TabStrip } from './TabStrip'
@@ -11,10 +11,16 @@ import type { Card, CardStatus } from '../types'
 import type { CardPatch } from '../lib/dataStore'
 
 interface Props {
+  activeProjectId: string
   cards: Card[]
+  // The active project's own cards plus every nested subgroup's — cloud
+  // display only; tabs/timeline/CRUD stay scoped to `cards` alone.
+  aggregatedCards: Card[]
+  projectTitleById: Map<string, string>
   addCard: (text: string, status?: CardStatus) => Promise<Card | undefined>
   patchCard: (id: string, patch: CardPatch) => void
   removeCard: (id: string) => void
+  onOpenForeignCard: (projectId: string, cardId: string) => void
   // Set when a card was clicked in the sidebar tree — opens/focuses that
   // card's tab, whether or not it was already open.
   initialOpenCardId?: string | null
@@ -32,10 +38,14 @@ function makeTempKey() {
 }
 
 export function BoardView({
+  activeProjectId,
   cards,
+  aggregatedCards,
+  projectTitleById,
   addCard,
   patchCard,
   removeCard,
+  onOpenForeignCard,
   initialOpenCardId,
   onConsumedInitialCard,
   onActiveCardChange,
@@ -48,9 +58,26 @@ export function BoardView({
 
   // The simulation lives here, above every tab, so switching away and back
   // doesn't reset it — cards keep the positions they had (per the brief:
-  // switching views is never a "recompute from scratch").
+  // switching views is never a "recompute from scratch"). It runs over the
+  // *aggregated* set so nested subgroups' cards get positioned too, each
+  // drifting toward its own cluster around the active project's own cards.
   const { ref: bodyRef, size } = useElementSize<HTMLDivElement>()
-  const cloudSim = useCloudSimulation({ cards, width: size.width, height: size.height })
+  // Stable across renders unless the aggregated set actually changes —
+  // otherwise a fresh closure every render would re-trigger the
+  // simulation's node-sync effect (which itself calls setState) forever.
+  const projectIdByCardId = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const c of aggregatedCards) map.set(c.id, c.project_id)
+    return map
+  }, [aggregatedCards])
+  const groupOf = useCallback((id: string) => projectIdByCardId.get(id) ?? activeProjectId, [projectIdByCardId, activeProjectId])
+  const cloudSim = useCloudSimulation({
+    cards: aggregatedCards,
+    width: size.width,
+    height: size.height,
+    groupOf,
+    centerGroup: activeProjectId,
+  })
 
   useEffect(() => {
     if (activeKey === 'cloud') {
@@ -62,12 +89,12 @@ export function BoardView({
   }, [activeKey])
 
   const openCardTab = (cardId: string) => {
-    const existing = openTabs.find((t) => t.cardId === cardId)
-    if (existing) {
-      setActiveKey(existing.key)
-      return
-    }
-    setOpenTabs((prev) => [...prev, { key: cardId, cardId }])
+    // The exists-check and the append must happen atomically against the
+    // *latest* state, not a closed-over `openTabs` — otherwise two calls
+    // in the same tick (StrictMode's double effect invocation, or two
+    // rapid clicks) both see "not open yet" and both append, producing a
+    // duplicate tab with the same key.
+    setOpenTabs((prev) => (prev.some((t) => t.cardId === cardId) ? prev : [...prev, { key: cardId, cardId }]))
     setActiveKey(cardId)
   }
 
@@ -134,7 +161,10 @@ export function BoardView({
       <div className="board-body" ref={bodyRef}>
         {activeKey === 'cloud' && (
           <CloudView
-            cards={cards}
+            cards={aggregatedCards}
+            activeProjectId={activeProjectId}
+            projectTitleById={projectTitleById}
+            clusterAnchors={cloudSim.clusterAnchors}
             size={size}
             positions={cloudSim.positions}
             beginDrag={cloudSim.beginDrag}
@@ -143,7 +173,10 @@ export function BoardView({
             releasePin={cloudSim.releasePin}
             onPatch={patchCard}
             onDelete={handleDeleteCard}
-            onOpen={openCardTab}
+            onOpen={(cardId, projectId) => {
+              if (projectId === activeProjectId) openCardTab(cardId)
+              else onOpenForeignCard(projectId, cardId)
+            }}
             hoveredId={hoveredId}
             onHover={setHoveredId}
             timelinePosition={(id) => timelinePositionLabel(cards, id)}
