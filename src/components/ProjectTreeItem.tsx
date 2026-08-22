@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import type { KeyboardEvent } from 'react'
+import { useDroppable } from '@dnd-kit/core'
 import type { ProjectTreeNode } from '../hooks/useProjectTree'
-import { cardTabTitle } from '../lib/timeline'
-import { STATUS_COLOR } from '../types'
+import { TreeCardLeaf } from './TreeCardLeaf'
 import type { Card } from '../types'
 
 interface Props {
@@ -22,7 +22,9 @@ interface Props {
 
 // One row in the sidebar's project tree, rendering its own children —
 // depth is unbounded, matching "part -> chapter -> scene -> ..." nesting.
-// Below its sub-projects, it also lists its own cards as clickable leaves.
+// Below its sub-projects, it also lists its own cards as clickable leaves,
+// and accepts a card dragged in from elsewhere in the tree (Sidebar's
+// DndContext resolves the drop back to this row via its project id).
 export function ProjectTreeItem({
   node,
   depth,
@@ -43,6 +45,7 @@ export function ProjectTreeItem({
   const hasExpandable = node.children.length > 0 || cards.length > 0
   const isOpen = expanded.has(node.project.id)
   const isActive = activeId === node.project.id
+  const { setNodeRef: setDropRef, isOver } = useDroppable({ id: `project:${node.project.id}` })
 
   const commitRename = () => {
     setEditing(false)
@@ -65,7 +68,8 @@ export function ProjectTreeItem({
   return (
     <div className="tree-node">
       <div
-        className={`tree-row ${isActive ? 'is-active' : ''}`}
+        ref={setDropRef}
+        className={`tree-row ${isActive ? 'is-active' : ''} ${isOver ? 'is-drop-target' : ''}`}
         style={{ paddingLeft: 8 + depth * 16 }}
         onClick={() => onSelect(node.project.id)}
       >
@@ -154,17 +158,14 @@ export function ProjectTreeItem({
           ))}
 
           {cards.map((card) => (
-            <button
+            <TreeCardLeaf
               key={card.id}
-              type="button"
-              className={`tree-row tree-row--card ${activeCardId === card.id ? 'is-active' : ''}`}
-              style={{ paddingLeft: 8 + (depth + 1) * 16 }}
-              onClick={() => onSelectCard(node.project.id, card.id)}
-            >
-              <span className="tree-toggle is-empty" />
-              <span className="tree-card-dot" style={{ background: STATUS_COLOR[card.status] }} />
-              <span className="tree-label">{cardTabTitle(card.text)}</span>
-            </button>
+              card={card}
+              projectId={node.project.id}
+              depth={depth + 1}
+              isActive={activeCardId === card.id}
+              onSelect={() => onSelectCard(node.project.id, card.id)}
+            />
           ))}
         </div>
       )}

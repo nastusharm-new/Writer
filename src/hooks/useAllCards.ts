@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { dataStore } from '../lib/dataStore'
 import type { Card } from '../types'
 
@@ -7,9 +7,11 @@ import type { Card } from '../types'
 // (from useCards) rather than this snapshot — that's the only project
 // whose cards can actually change while you're looking at the tree, so
 // it's the only one that needs to be perfectly live; everything else just
-// needs to be recent, and gets refreshed whenever you switch projects.
+// needs to be recent, and gets refreshed whenever you switch projects (or
+// explicitly, via refetch(), after dragging a card to a different project).
 export function useAllCards(userId: string | undefined, activeProjectId: string | null, activeCards: Card[]) {
   const [snapshot, setSnapshot] = useState<Card[]>([])
+  const [refetchToken, setRefetchToken] = useState(0)
 
   useEffect(() => {
     if (!userId) return
@@ -20,9 +22,11 @@ export function useAllCards(userId: string | undefined, activeProjectId: string 
     return () => {
       cancelled = true
     }
-  }, [userId, activeProjectId])
+  }, [userId, activeProjectId, refetchToken])
 
-  return useMemo(() => {
+  const refetch = useCallback(() => setRefetchToken((t) => t + 1), [])
+
+  const cardsByProject = useMemo(() => {
     const map = new Map<string, Card[]>()
     for (const card of snapshot) {
       if (card.project_id === activeProjectId) continue
@@ -33,4 +37,6 @@ export function useAllCards(userId: string | undefined, activeProjectId: string 
     if (activeProjectId) map.set(activeProjectId, activeCards)
     return map
   }, [snapshot, activeProjectId, activeCards])
+
+  return { cardsByProject, refetch }
 }

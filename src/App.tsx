@@ -4,6 +4,7 @@ import { useProjectTree } from './hooks/useProjectTree'
 import { useCards } from './hooks/useCards'
 import { useAllCards } from './hooks/useAllCards'
 import { collectDescendantIds } from './lib/projectTree'
+import { dataStore } from './lib/dataStore'
 import { AuthScreen } from './components/AuthScreen'
 import { BoardView } from './components/BoardView'
 import { Sidebar } from './components/Sidebar'
@@ -34,8 +35,15 @@ function Workspace({ userId, onSignOut }: { userId: string; onSignOut: () => voi
     renameProject,
     deleteProject,
   } = useProjectTree(userId)
-  const { cards, loading: cardsLoading, addCard, patchCard, removeCard } = useCards(activeProjectId ?? undefined)
-  const cardsByProject = useAllCards(userId, activeProjectId, cards)
+  const {
+    cards,
+    loading: cardsLoading,
+    addCard,
+    patchCard,
+    removeCard,
+    refetch: refetchActiveCards,
+  } = useCards(activeProjectId ?? undefined)
+  const { cardsByProject, refetch: refetchAllCards } = useAllCards(userId, activeProjectId, cards)
 
   // A card clicked in the sidebar tree, waiting to be opened as a tab once
   // its project is the active one (see BoardView's initialOpenCardId).
@@ -72,6 +80,19 @@ function Workspace({ userId, onSignOut }: { userId: string; onSignOut: () => voi
     setPendingCardId(cardId)
   }
 
+  // Dragging a card leaf onto a different project row in the sidebar.
+  const handleMoveCard = async (cardId: string, sourceProjectId: string, targetProjectId: string) => {
+    if (sourceProjectId === targetProjectId) return
+    await dataStore.moveCard(cardId, targetProjectId)
+    // The active project's `cards` is a live optimistic list, independent
+    // of the sidebar's snapshot — refetch whichever side(s) this move
+    // actually touched so both stay correct.
+    if (sourceProjectId === activeProjectId || targetProjectId === activeProjectId) {
+      refetchActiveCards()
+    }
+    refetchAllCards()
+  }
+
   return (
     <div className="app-shell">
       <Sidebar
@@ -81,6 +102,7 @@ function Workspace({ userId, onSignOut }: { userId: string; onSignOut: () => voi
         activeCardId={activeCardId}
         onSelect={setActiveProjectId}
         onSelectCard={handleSelectCard}
+        onMoveCard={handleMoveCard}
         onAddChild={(parentId) => addProject(parentId, 'Без названия')}
         onRename={renameProject}
         onDelete={deleteProject}

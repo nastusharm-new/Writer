@@ -312,12 +312,23 @@ select {
   color: var(--text-h);
 }
 
+.tree-row.is-drop-target {
+  background: var(--accent-bg);
+  outline: 1.5px dashed var(--accent-border);
+  outline-offset: -1px;
+}
+
 .tree-row--card {
   width: 100%;
   border: none;
   background: none;
   font: inherit;
   text-align: left;
+  cursor: grab;
+}
+
+.tree-row--card.is-dragging {
+  opacity: 0.35;
 }
 
 .tree-card-dot {
@@ -326,6 +337,19 @@ select {
   border-radius: 50%;
   flex: none;
   margin-right: 2px;
+}
+
+.tree-drag-overlay {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 6px;
+  background: var(--card-bg);
+  color: var(--text-h);
+  font-size: 13.5px;
+  box-shadow: var(--shadow-lift);
+  border: 1px solid var(--card-border);
 }
 
 .tree-toggle {

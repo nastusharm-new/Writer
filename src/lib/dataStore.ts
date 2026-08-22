@@ -35,6 +35,10 @@ export interface DataStore {
   listCardsForUser(userId: string): Promise<Card[]>
   createCard(projectId: string, text: string, status: CardStatus): Promise<Card>
   updateCard(id: string, patch: CardPatch): Promise<Card>
+  // Reassigns a card to a different project — dragging it onto another
+  // group in the sidebar tree. Clears manual_order/fx/fy since those only
+  // mean anything relative to the sequence/cloud it was leaving.
+  moveCard(id: string, projectId: string): Promise<Card>
   deleteCard(id: string): Promise<void>
 }
 

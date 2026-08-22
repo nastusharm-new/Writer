@@ -109,6 +109,23 @@ export function BoardView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialOpenCardId])
 
+  // A card whose tab is open here can leave this project without going
+  // through handleDeleteCard — dragged onto a different group in the
+  // sidebar tree. Close its tab rather than leaving it open with an
+  // orphaned "Без названия" label pointing at a card that's moved on.
+  useEffect(() => {
+    setOpenTabs((prev) => {
+      const next = prev.filter((t) => t.cardId === null || cards.some((c) => c.id === t.cardId))
+      return next.length === prev.length ? prev : next
+    })
+  }, [cards])
+
+  useEffect(() => {
+    if (activeKey !== 'cloud' && activeKey !== 'timeline' && !openTabs.some((t) => t.key === activeKey)) {
+      setActiveKey('cloud')
+    }
+  }, [openTabs, activeKey])
+
   const openNewTab = () => {
     const key = makeTempKey()
     setOpenTabs((prev) => [...prev, { key, cardId: null }])

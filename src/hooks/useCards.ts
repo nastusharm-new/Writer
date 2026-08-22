@@ -14,6 +14,7 @@ export function useCards(projectId: string | undefined) {
   // briefly see the *previous* project's cards under the new project's id.
   const [loaded, setLoaded] = useState<Loaded>({ projectId: undefined, cards: [] })
   const [fetching, setFetching] = useState(true)
+  const [refetchToken, setRefetchToken] = useState(0)
 
   useEffect(() => {
     if (!projectId) return
@@ -28,7 +29,13 @@ export function useCards(projectId: string | undefined) {
     return () => {
       cancelled = true
     }
-  }, [projectId])
+    // refetchToken is a deliberate re-run trigger — see refetch() below,
+    // used when a card is dragged into or out of this project from the
+    // sidebar tree (a mutation useCards itself didn't make).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectId, refetchToken])
+
+  const refetch = useCallback(() => setRefetchToken((t) => t + 1), [])
 
   const stale = loaded.projectId !== projectId
   const cards = stale ? [] : loaded.cards
@@ -74,5 +81,5 @@ export function useCards(projectId: string | undefined) {
     [setCards],
   )
 
-  return { cards, loading, addCard, patchCard, removeCard }
+  return { cards, loading, addCard, patchCard, removeCard, refetch }
 }

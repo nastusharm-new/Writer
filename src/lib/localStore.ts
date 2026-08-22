@@ -147,6 +147,19 @@ export const localStore: DataStore = {
     return updated
   },
 
+  async moveCard(id: string, projectId: string) {
+    const cards = read<Card[]>(LS_CARDS, [])
+    let updated: Card | undefined
+    const next = cards.map((c) => {
+      if (c.id !== id) return c
+      updated = { ...c, project_id: projectId, manual_order: null, fx: null, fy: null }
+      return updated
+    })
+    write(LS_CARDS, next)
+    if (!updated) throw new Error('card not found')
+    return updated
+  },
+
   async deleteCard(id: string) {
     const cards = read<Card[]>(LS_CARDS, [])
     write(

@@ -119,6 +119,17 @@ export const supabaseStore: DataStore = {
     return data as Card
   },
 
+  async moveCard(id: string, projectId: string) {
+    const { data, error } = await client()
+      .from('cards')
+      .update({ project_id: projectId, manual_order: null, fx: null, fy: null })
+      .eq('id', id)
+      .select()
+      .single()
+    if (error) throw error
+    return data as Card
+  },
+
   async deleteCard(id: string) {
     const { error } = await client().from('cards').delete().eq('id', id)
     if (error) throw error
