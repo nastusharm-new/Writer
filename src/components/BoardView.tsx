@@ -41,6 +41,13 @@ interface Props {
   // the folder-to-folder edge in the cloud's node-link graph.
   groupParentById: Map<string, string>
   onNavigateToProject: (projectId: string) => void
+  // Which of Cloud/Timeline was last chosen — lifted above this
+  // component's per-project remount (see App.tsx's `key={activeProjectId}`)
+  // so navigating to a different project via the sidebar, a cloud hub, or
+  // the timeline's structure section keeps whichever view you were on
+  // instead of always landing back on Cloud.
+  viewMode: 'cloud' | 'timeline'
+  onViewModeChange: (mode: 'cloud' | 'timeline') => void
 }
 
 interface OpenTab {
@@ -69,11 +76,22 @@ export function BoardView({
   breadcrumbPath,
   groupParentById,
   onNavigateToProject,
+  viewMode,
+  onViewModeChange,
 }: Props) {
   const [openTabs, setOpenTabs] = useState<OpenTab[]>(() =>
     cards.length === 0 ? [{ key: makeTempKey(), cardId: null }] : [],
   )
-  const [activeKey, setActiveKey] = useState<string>(() => (cards.length === 0 ? openTabs[0].key : 'cloud'))
+  const [activeKey, setActiveKey] = useState<string>(() => (cards.length === 0 ? openTabs[0].key : viewMode))
+  // Switching to Cloud/Timeline updates both the local tab state and the
+  // lifted preference in one place, so every call site stays in sync.
+  const setView = useCallback(
+    (mode: 'cloud' | 'timeline') => {
+      setActiveKey(mode)
+      onViewModeChange(mode)
+    },
+    [onViewModeChange],
+  )
   const [hoveredId, setHoveredId] = useState<string | null>(null)
   const [archiveOpen, setArchiveOpen] = useState(false)
   const archive = useArchive(activeProjectId, archiveOpen)
@@ -179,9 +197,9 @@ export function BoardView({
 
   useEffect(() => {
     if (activeKey !== 'cloud' && activeKey !== 'timeline' && !openTabs.some((t) => t.key === activeKey)) {
-      setActiveKey('cloud')
+      setActiveKey(viewMode)
     }
-  }, [openTabs, activeKey])
+  }, [openTabs, activeKey, viewMode])
 
   const openNewTab = () => {
     const key = makeTempKey()
@@ -191,7 +209,7 @@ export function BoardView({
 
   const closeTab = (key: string) => {
     setOpenTabs((prev) => prev.filter((t) => t.key !== key))
-    if (activeKey === key) setActiveKey('cloud')
+    if (activeKey === key) setActiveKey(viewMode)
   }
 
   const handleTabCreated = (tempKey: string, created: Card) => {
@@ -237,8 +255,8 @@ export function BoardView({
       <div className="pane-header">
         <TabStrip
           activeKey={activeKey}
-          onSelectCloud={() => setActiveKey('cloud')}
-          onSelectTimeline={() => setActiveKey('timeline')}
+          onSelectCloud={() => setView('cloud')}
+          onSelectTimeline={() => setView('timeline')}
           cardTabs={cardTabs}
           onSelectCard={setActiveKey}
           onCloseCard={closeTab}
@@ -316,7 +334,7 @@ export function BoardView({
         )}
 
         {activeKey === 'cloud' && (
-          <PreviewBar cardCount={cards.length} onSwitchToTimeline={() => setActiveKey('timeline')} />
+          <PreviewBar cardCount={cards.length} onSwitchToTimeline={() => setView('timeline')} />
         )}
 
         {archiveOpen && (

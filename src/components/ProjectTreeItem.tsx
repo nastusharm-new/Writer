@@ -1,8 +1,10 @@
 import { useCallback, useState } from 'react'
 import type { KeyboardEvent } from 'react'
 import { useDraggable, useDroppable } from '@dnd-kit/core'
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import type { ProjectTreeNode } from '../hooks/useProjectTree'
 import { TreeCardLeaf } from './TreeCardLeaf'
+import { getSequence, getUnassigned } from '../lib/timeline'
 import type { Card } from '../types'
 
 interface Props {
@@ -41,7 +43,12 @@ export function ProjectTreeItem({
 }: Props) {
   const [editing, setEditing] = useState(false)
   const [draftTitle, setDraftTitle] = useState(node.project.title)
-  const cards = cardsByProject.get(node.project.id) ?? []
+  const rawCards = cardsByProject.get(node.project.id) ?? []
+  // Same order the timeline would show (sequence first, then whatever
+  // hasn't been placed yet) — dragging a leaf to reorder it here reuses
+  // manual_order, so the sidebar becomes another way to shape the same
+  // sequence rather than a second, unrelated ordering.
+  const cards = [...getSequence(rawCards), ...getUnassigned(rawCards)]
   const hasExpandable = node.children.length > 0 || cards.length > 0
   const isOpen = expanded.has(node.project.id)
   const isActive = activeId === node.project.id
@@ -169,17 +176,20 @@ export function ProjectTreeItem({
         <div className="tree-children">
           {/* This project's own cards before its sub-projects — what
               directly belongs here should read before the folders nested
-              underneath it, not after. */}
-          {cards.map((card) => (
-            <TreeCardLeaf
-              key={card.id}
-              card={card}
-              projectId={node.project.id}
-              depth={depth + 1}
-              isActive={activeCardId === card.id}
-              onSelect={() => onSelectCard(node.project.id, card.id)}
-            />
-          ))}
+              underneath it, not after. Sortable among themselves (see
+              Sidebar's DndContext) so they can be reordered in place. */}
+          <SortableContext items={cards.map((c) => `card:${c.id}`)} strategy={verticalListSortingStrategy}>
+            {cards.map((card) => (
+              <TreeCardLeaf
+                key={card.id}
+                card={card}
+                projectId={node.project.id}
+                depth={depth + 1}
+                isActive={activeCardId === card.id}
+                onSelect={() => onSelectCard(node.project.id, card.id)}
+              />
+            ))}
+          </SortableContext>
 
           {node.children.map((child) => (
             <ProjectTreeItem

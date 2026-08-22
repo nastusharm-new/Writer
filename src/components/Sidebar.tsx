@@ -1,5 +1,16 @@
 import { useEffect, useMemo, useState } from 'react'
-import { DndContext, DragOverlay, PointerSensor, useSensor, useSensors, type DragEndEvent, type DragStartEvent } from '@dnd-kit/core'
+import {
+  DndContext,
+  DragOverlay,
+  PointerSensor,
+  pointerWithin,
+  rectIntersection,
+  useSensor,
+  useSensors,
+  type CollisionDetection,
+  type DragEndEvent,
+  type DragStartEvent,
+} from '@dnd-kit/core'
 import { ProjectTreeItem } from './ProjectTreeItem'
 import { cardTabTitle } from '../lib/timeline'
 import type { ProjectTreeNode } from '../hooks/useProjectTree'
@@ -18,6 +29,10 @@ interface Props {
   onSelectCard: (projectId: string, cardId: string) => void
   onMoveCard: (cardId: string, sourceProjectId: string, targetProjectId: string) => void
   onMoveProject: (projectId: string, targetParentId: string) => void
+  // Dropped onto another card — reorders it among its siblings using the
+  // same manual_order the timeline sequence uses, rather than the coarse
+  // "somewhere in this project" a drop on the project row itself gives.
+  onReorderCard: (cardId: string, sourceProjectId: string, targetProjectId: string, targetCardId: string) => void
   onAddChild: (parentId: string | null) => void
   onRename: (id: string, title: string) => void
   onDelete: (id: string) => void
@@ -39,6 +54,7 @@ export function Sidebar({
   onSelectCard,
   onMoveCard,
   onMoveProject,
+  onReorderCard,
   onAddChild,
   onRename,
   onDelete,
@@ -91,31 +107,56 @@ export function Sidebar({
     setDraggingProjectId((data?.projectId as string) ?? null)
   }
 
+  // Sortable card items and plain-droppable project rows share this one
+  // DndContext — rect-center strategies don't reliably resolve a sortable
+  // target once its container has few items, so prefer whatever's directly
+  // under the pointer and only fall back to rect overlap.
+  const collisionDetection: CollisionDetection = (args) => {
+    const pointerCollisions = pointerWithin(args)
+    if (pointerCollisions.length > 0) return pointerCollisions
+    return rectIntersection(args)
+  }
+
   const handleDragEnd = (event: DragEndEvent) => {
     setDraggingCardId(null)
     setDraggingProjectId(null)
     const { active, over } = event
     if (!over) return
     const overId = String(over.id)
-    if (!overId.startsWith('project:')) return
-    const targetProjectId = overId.slice('project:'.length)
 
     const cardId = active.data.current?.cardId as string | undefined
     const sourceProjectId = active.data.current?.sourceProjectId as string | undefined
-    if (cardId && sourceProjectId) {
-      onMoveCard(cardId, sourceProjectId, targetProjectId)
+
+    if (overId.startsWith('project:')) {
+      const targetProjectId = overId.slice('project:'.length)
+      if (cardId && sourceProjectId) {
+        onMoveCard(cardId, sourceProjectId, targetProjectId)
+        return
+      }
+      const draggedProjectId = active.data.current?.projectId as string | undefined
+      if (draggedProjectId) onMoveProject(draggedProjectId, targetProjectId)
       return
     }
 
-    const draggedProjectId = active.data.current?.projectId as string | undefined
-    if (draggedProjectId) onMoveProject(draggedProjectId, targetProjectId)
+    if (overId.startsWith('card:') && cardId && sourceProjectId) {
+      const targetCardId = overId.slice('card:'.length)
+      if (targetCardId === cardId) return
+      const targetCard = cardById.get(targetCardId)
+      if (!targetCard) return
+      onReorderCard(cardId, sourceProjectId, targetCard.project_id, targetCardId)
+    }
   }
 
   const draggingCard = draggingCardId ? cardById.get(draggingCardId) : null
   const draggingProjectTitle = draggingProjectId ? projectTitleById.get(draggingProjectId) : null
 
   return (
-    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={collisionDetection}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
       <aside className="sidebar">
         <div className="sidebar-header">
           <span className="sidebar-title">Draft</span>

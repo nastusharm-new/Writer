@@ -5,6 +5,7 @@ import { useCards } from './hooks/useCards'
 import { useAllCards } from './hooks/useAllCards'
 import { collectDescendantIds, getAncestorPath } from './lib/projectTree'
 import { compileToText, downloadTextFile } from './lib/compile'
+import { getSequence, getUnassigned } from './lib/timeline'
 import { dataStore } from './lib/dataStore'
 import { AuthScreen } from './components/AuthScreen'
 import { BoardView } from './components/BoardView'
@@ -51,6 +52,11 @@ function Workspace({ userId, onSignOut }: { userId: string; onSignOut: () => voi
   // its project is the active one (see BoardView's initialOpenCardId).
   const [pendingCardId, setPendingCardId] = useState<string | null>(null)
   const [activeCardId, setActiveCardId] = useState<string | null>(null)
+  // Which of Cloud/Timeline was last chosen — lives above BoardView's
+  // per-project remount so navigating to a different project (sidebar,
+  // cloud hub, timeline structure link) keeps the current view instead of
+  // always landing back on Cloud.
+  const [viewMode, setViewMode] = useState<'cloud' | 'timeline'>('cloud')
 
   // The active project's cloud aggregates every nested subgroup's cards
   // too (a "часть" or "сцена" is a project of its own, but its cards still
@@ -143,6 +149,42 @@ function Workspace({ userId, onSignOut }: { userId: string; onSignOut: () => voi
     refetchAllCards()
   }
 
+  // Dragging a card leaf onto another card — reorders it in among its
+  // siblings using manual_order, the same field the timeline sequence
+  // reads. Uses whichever card list is live (the active project's) or the
+  // sidebar's recent snapshot for everything else.
+  const handleReorderCard = async (
+    cardId: string,
+    sourceProjectId: string,
+    targetProjectId: string,
+    targetCardId: string,
+  ) => {
+    const cardsOf = (projectId: string) => (projectId === activeProjectId ? cards : cardsByProject.get(projectId) ?? [])
+    const draggedCard = cardsOf(sourceProjectId).find((c) => c.id === cardId)
+    if (!draggedCard) return
+    const ordered = [...getSequence(cardsOf(targetProjectId)), ...getUnassigned(cardsOf(targetProjectId))].filter(
+      (c) => c.id !== cardId,
+    )
+    const insertAt = ordered.findIndex((c) => c.id === targetCardId)
+    const at = insertAt === -1 ? ordered.length : insertAt
+    const next = [...ordered.slice(0, at), draggedCard, ...ordered.slice(at)]
+
+    if (sourceProjectId !== targetProjectId) {
+      await dataStore.moveCard(cardId, targetProjectId)
+    }
+    await Promise.all(
+      next
+        .map((c, i) => ({ c, i }))
+        .filter(({ c, i }) => c.manual_order !== i)
+        .map(({ c, i }) => dataStore.updateCard(c.id, { manual_order: i })),
+    )
+
+    if (sourceProjectId === activeProjectId || targetProjectId === activeProjectId) {
+      refetchActiveCards()
+    }
+    refetchAllCards()
+  }
+
   return (
     <div className="app-shell">
       <Sidebar
@@ -156,6 +198,7 @@ function Workspace({ userId, onSignOut }: { userId: string; onSignOut: () => voi
         onSelectCard={handleSelectCard}
         onMoveCard={handleMoveCard}
         onMoveProject={handleMoveProject}
+        onReorderCard={handleReorderCard}
         onAddChild={(parentId) => addProject(parentId, 'Без названия')}
         onRename={renameProject}
         onDelete={deleteProject}
@@ -183,6 +226,8 @@ function Workspace({ userId, onSignOut }: { userId: string; onSignOut: () => voi
             breadcrumbPath={breadcrumbPath}
             groupParentById={groupParentById}
             onNavigateToProject={setActiveProjectId}
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
           />
         )}
       </main>
