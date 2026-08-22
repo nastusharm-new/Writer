@@ -1,5 +1,5 @@
 import type { Card, Project } from '../types'
-import { getSequence, getUnassigned } from './timeline'
+import { buildManuscript } from './manuscript'
 
 function childrenByParent(projects: Project[]): Map<string, Project[]> {
   const map = new Map<string, Project[]>()
@@ -12,35 +12,30 @@ function childrenByParent(projects: Project[]): Map<string, Project[]> {
   return map
 }
 
-// Walks a project and every nested subgroup depth-first, laying out each
-// one's cards in the same order the timeline would (sequence first, then
-// whatever hasn't been placed yet) — the manuscript read top to bottom, the
-// way the author has actually arranged it so far.
+// Walks a project and every nested subgroup depth-first (see
+// buildManuscript) and formats it as plain text — the manuscript read top
+// to bottom, the way the author has actually arranged it so far.
 export function compileToText(projects: Project[], cardsByProject: Map<string, Card[]>, rootId: string): string {
   const children = childrenByParent(projects)
   const byId = new Map(projects.map((p) => [p.id, p]))
+  const sections = buildManuscript(
+    rootId,
+    (id) => (children.get(id) ?? []).map((p) => p.id),
+    (id) => cardsByProject.get(id) ?? [],
+    (id) => byId.get(id)?.title ?? 'Без названия',
+  )
+
   const lines: string[] = []
-
-  function walk(projectId: string, depth: number) {
-    const project = byId.get(projectId)
-    if (!project) return
-    lines.push(`${'#'.repeat(Math.min(depth + 1, 6))} ${project.title}`, '')
-
-    const cards = cardsByProject.get(projectId) ?? []
-    for (const card of [...getSequence(cards), ...getUnassigned(cards)]) {
+  for (const section of sections) {
+    lines.push(`${'#'.repeat(Math.min(section.depth + 1, 6))} ${section.title}`, '')
+    for (const card of section.cards) {
       lines.push(card.text.trim())
       if (card.images.length > 0) {
         lines.push(`[+ ${card.images.length} изображени${card.images.length === 1 ? 'е' : 'я'}]`)
       }
       lines.push('')
     }
-
-    for (const child of children.get(projectId) ?? []) {
-      walk(child.id, depth + 1)
-    }
   }
-
-  walk(rootId, 0)
   return `${lines.join('\n').trim()}\n`
 }
 

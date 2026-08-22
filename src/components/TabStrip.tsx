@@ -7,19 +7,21 @@ interface Props {
   activeKey: string
   onSelectCloud: () => void
   onSelectTimeline: () => void
+  onSelectText: () => void
   cardTabs: CardTabInfo[]
   onSelectCard: (key: string) => void
   onCloseCard: (key: string) => void
   onNewTab: () => void
 }
 
-// Облако and Таймлайн are permanent, un-closable tabs onto the same
-// project; every open card sits alongside them as its own closable tab,
-// titled from its own first line.
+// Облако, Таймлайн, and Текст are permanent, un-closable tabs onto the
+// same project; every open card sits alongside them as its own closable
+// tab, titled from its own first line.
 export function TabStrip({
   activeKey,
   onSelectCloud,
   onSelectTimeline,
+  onSelectText,
   cardTabs,
   onSelectCard,
   onCloseCard,
@@ -44,6 +46,15 @@ export function TabStrip({
         onClick={onSelectTimeline}
       >
         Таймлайн
+      </button>
+      <button
+        type="button"
+        role="tab"
+        aria-selected={activeKey === 'text'}
+        className={`tab ${activeKey === 'text' ? 'is-active' : ''}`}
+        onClick={onSelectText}
+      >
+        Текст
       </button>
 
       {cardTabs.map((tab) => (

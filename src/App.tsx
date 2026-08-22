@@ -56,7 +56,7 @@ function Workspace({ userId, onSignOut }: { userId: string; onSignOut: () => voi
   // per-project remount so navigating to a different project (sidebar,
   // cloud hub, timeline structure link) keeps the current view instead of
   // always landing back on Cloud.
-  const [viewMode, setViewMode] = useState<'cloud' | 'timeline'>('cloud')
+  const [viewMode, setViewMode] = useState<'cloud' | 'timeline' | 'text'>('cloud')
 
   // The active project's cloud aggregates every nested subgroup's cards
   // too (a "часть" or "сцена" is a project of its own, but its cards still

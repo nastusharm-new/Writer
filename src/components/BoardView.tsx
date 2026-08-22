@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { CloudView } from './CloudView'
 import { TimelineView } from './TimelineView'
+import { TextView } from './TextView'
 import { TabStrip } from './TabStrip'
 import { PreviewBar } from './PreviewBar'
 import { CardTabPane } from './CardTabPane'
 import { ArchivePanel } from './ArchivePanel'
 import { cardTabTitle, timelinePositionLabel } from '../lib/timeline'
+import { buildManuscript } from '../lib/manuscript'
 import { useCloudSimulation } from '../hooks/useCloudSimulation'
 import { useElementSize } from '../hooks/useElementSize'
 import { useArchive } from '../hooks/useArchive'
@@ -41,13 +43,13 @@ interface Props {
   // the folder-to-folder edge in the cloud's node-link graph.
   groupParentById: Map<string, string>
   onNavigateToProject: (projectId: string) => void
-  // Which of Cloud/Timeline was last chosen — lifted above this
+  // Which of Cloud/Timeline/Text was last chosen — lifted above this
   // component's per-project remount (see App.tsx's `key={activeProjectId}`)
   // so navigating to a different project via the sidebar, a cloud hub, or
   // the timeline's structure section keeps whichever view you were on
   // instead of always landing back on Cloud.
-  viewMode: 'cloud' | 'timeline'
-  onViewModeChange: (mode: 'cloud' | 'timeline') => void
+  viewMode: 'cloud' | 'timeline' | 'text'
+  onViewModeChange: (mode: 'cloud' | 'timeline' | 'text') => void
 }
 
 interface OpenTab {
@@ -88,7 +90,7 @@ export function BoardView({
   // Switching to Cloud/Timeline updates both the local tab state and the
   // lifted preference in one place, so every call site stays in sync.
   const setView = useCallback(
-    (mode: 'cloud' | 'timeline') => {
+    (mode: 'cloud' | 'timeline' | 'text') => {
       setActiveKey(mode)
       onViewModeChange(mode)
     },
@@ -156,6 +158,37 @@ export function BoardView({
     return edges
   }, [cloudSim.hubNodes, groupParentById, activeProjectId])
 
+  // The whole manuscript — active project plus every nested subgroup,
+  // depth-first — for the read-only "Текст" view.
+  const manuscriptChildrenOf = useMemo(() => {
+    const map = new Map<string, string[]>()
+    for (const [child, parent] of groupParentById) {
+      const list = map.get(parent)
+      if (list) list.push(child)
+      else map.set(parent, [child])
+    }
+    return map
+  }, [groupParentById])
+  const cardsByProjectForManuscript = useMemo(() => {
+    const map = new Map<string, Card[]>()
+    for (const c of aggregatedCards) {
+      const list = map.get(c.project_id)
+      if (list) list.push(c)
+      else map.set(c.project_id, [c])
+    }
+    return map
+  }, [aggregatedCards])
+  const manuscriptSections = useMemo(
+    () =>
+      buildManuscript(
+        activeProjectId,
+        (id) => manuscriptChildrenOf.get(id) ?? [],
+        (id) => cardsByProjectForManuscript.get(id) ?? [],
+        (id) => projectTitleById.get(id) ?? 'Без названия',
+      ),
+    [activeProjectId, manuscriptChildrenOf, cardsByProjectForManuscript, projectTitleById],
+  )
+
   useEffect(() => {
     if (activeKey === 'cloud') {
       cloudSim.resume()
@@ -197,8 +230,10 @@ export function BoardView({
     })
   }, [cards])
 
+  const isPermanentTab = (key: string) => key === 'cloud' || key === 'timeline' || key === 'text'
+
   useEffect(() => {
-    if (activeKey !== 'cloud' && activeKey !== 'timeline' && !openTabs.some((t) => t.key === activeKey)) {
+    if (!isPermanentTab(activeKey) && !openTabs.some((t) => t.key === activeKey)) {
       setActiveKey(viewMode)
     }
   }, [openTabs, activeKey, viewMode])
@@ -259,6 +294,7 @@ export function BoardView({
           activeKey={activeKey}
           onSelectCloud={() => setView('cloud')}
           onSelectTimeline={() => setView('timeline')}
+          onSelectText={() => setView('text')}
           cardTabs={cardTabs}
           onSelectCard={setActiveKey}
           onCloseCard={closeTab}
@@ -323,6 +359,8 @@ export function BoardView({
             onHover={setHoveredId}
           />
         )}
+
+        {activeKey === 'text' && <TextView sections={manuscriptSections} />}
 
         {activeTab && (
           <CardTabPane

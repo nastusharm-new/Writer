@@ -1361,3 +1361,53 @@ select {
 .preview-bar-dismiss:hover {
   opacity: 1;
 }
+
+/* ---------- Text view — the manuscript as continuous prose, no cards ---- */
+
+.text-view {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  background: var(--canvas-bg);
+}
+
+.text-page {
+  max-width: 660px;
+  margin: 0 auto;
+  padding: 56px 32px 120px;
+}
+
+.text-view-empty {
+  color: var(--text);
+  opacity: 0.6;
+  font-style: italic;
+  text-align: center;
+  padding-top: 60px;
+}
+
+.text-section {
+  margin-bottom: 40px;
+}
+
+.text-section-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--text-h);
+  margin: 0 0 20px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.text-paragraph {
+  font-family: var(--serif);
+  font-size: 18px;
+  line-height: 175%;
+  color: var(--text-h);
+  white-space: pre-wrap;
+  margin-bottom: 1.4em;
+  text-indent: 1.6em;
+}
+
+.text-paragraph:first-of-type {
+  text-indent: 0;
+}
