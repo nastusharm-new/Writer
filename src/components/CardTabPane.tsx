@@ -66,7 +66,19 @@ export function CardTabPane({ card, onCreate, onPatch, onDelete, onCreated }: Pr
   commitRef.current = commit
 
   useEffect(() => {
-    textareaRef.current?.focus()
+    const el = textareaRef.current
+    if (el) {
+      // A plain .focus() drops the cursor at position 0, not the end of
+      // whatever text is already there. That's invisible for a genuinely
+      // blank tab, but this effect also re-runs on every remount — and a
+      // fresh tab's first autosave swaps its temp key for the real card
+      // id, which *is* a remount. Without this, the very next keystroke
+      // after the first word lands at the start of the text instead of
+      // continuing it.
+      el.focus()
+      const end = el.value.length
+      el.setSelectionRange(end, end)
+    }
     return () => {
       // Switching tabs (or closing this one) before the debounce fires
       // must not silently drop the last few keystrokes.
