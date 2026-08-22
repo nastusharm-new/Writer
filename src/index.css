@@ -1176,8 +1176,14 @@ select {
   padding: 4px 0;
 }
 
+.timeline-lower {
+  flex: 1;
+  overflow-y: auto;
+  border-top: 1px solid var(--border);
+}
+
 .timeline-unassigned-label {
-  padding: 0 20px 8px;
+  padding: 16px 20px 8px;
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.6px;
@@ -1186,15 +1192,50 @@ select {
 }
 
 .timeline-unassigned-track {
-  flex: 1;
   display: flex;
   flex-wrap: wrap;
   align-content: flex-start;
   gap: 14px;
   padding: 0 20px 20px;
-  overflow-y: auto;
+}
+
+.timeline-structure {
   border-top: 1px solid var(--border);
   padding-top: 16px;
+  margin-top: 4px;
+}
+
+.timeline-structure-label {
+  padding: 0 20px 10px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text);
+  opacity: 0.5;
+}
+
+.timeline-structure-group {
+  padding: 0 20px 16px;
+}
+
+.timeline-structure-group-title {
+  border: none;
+  background: none;
+  color: var(--accent);
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 0 0 8px;
+  cursor: pointer;
+}
+
+.timeline-structure-group-title:hover {
+  text-decoration: underline;
+}
+
+.timeline-structure-group-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
 }
 
 /* ---------- Preview bar (non-modal nudge after 3-5 cards) ---------- */

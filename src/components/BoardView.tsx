@@ -104,6 +104,12 @@ export function BoardView({
     for (const c of aggregatedCards) map.set(c.id, c.project_id)
     return map
   }, [aggregatedCards])
+  // The timeline shows these too now (read-only, grouped by folder) — same
+  // structure the cloud shows, not just the current project's own cards.
+  const foreignCards = useMemo(
+    () => aggregatedCards.filter((c) => c.project_id !== activeProjectId),
+    [aggregatedCards, activeProjectId],
+  )
   const groupOf = useCallback((id: string) => projectIdByCardId.get(id) ?? activeProjectId, [projectIdByCardId, activeProjectId])
   const groupParent = useCallback((id: string) => groupParentById.get(id), [groupParentById])
   const cloudSim = useCloudSimulation({
@@ -286,9 +292,13 @@ export function BoardView({
         {activeKey === 'timeline' && (
           <TimelineView
             cards={cards}
+            foreignCards={foreignCards}
+            projectTitleById={projectTitleById}
             onPatch={patchCard}
             onDelete={handleDeleteCard}
             onOpen={openCardTab}
+            onOpenForeign={onOpenForeignCard}
+            onNavigateToProject={onNavigateToProject}
             hoveredId={hoveredId}
             onHover={setHoveredId}
           />

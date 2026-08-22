@@ -1,4 +1,4 @@
-import { useState, type CSSProperties, type ReactNode } from 'react'
+import { useMemo, useState, type CSSProperties, type ReactNode } from 'react'
 import {
   DndContext,
   DragOverlay,
@@ -27,9 +27,17 @@ import type { CardPatch } from '../lib/dataStore'
 
 interface Props {
   cards: Card[]
+  // Cards from nested subgroups (not this project's own) — shown below the
+  // sequence as read-only, grouped by which folder they're in, so the
+  // timeline shows the same structure the cloud does rather than only
+  // ever knowing about the cards directly in front of you.
+  foreignCards: Card[]
+  projectTitleById: Map<string, string>
   onPatch: (id: string, patch: CardPatch) => void
   onDelete: (id: string) => void
   onOpen: (id: string) => void
+  onOpenForeign: (projectId: string, cardId: string) => void
+  onNavigateToProject: (projectId: string) => void
   hoveredId: string | null
   onHover: (id: string | null) => void
 }
@@ -85,11 +93,32 @@ function TimelineCard({
   )
 }
 
-export function TimelineView({ cards, onPatch, onDelete, onOpen, hoveredId, onHover }: Props) {
+export function TimelineView({
+  cards,
+  foreignCards,
+  projectTitleById,
+  onPatch,
+  onDelete,
+  onOpen,
+  onOpenForeign,
+  onNavigateToProject,
+  hoveredId,
+  onHover,
+}: Props) {
   const sequence = getSequence(cards)
   const unassigned = getUnassigned(cards)
   const [activeId, setActiveId] = useState<string | null>(null)
   const [zoom, setZoom] = useState(1)
+
+  const foreignGroups = useMemo(() => {
+    const map = new Map<string, Card[]>()
+    for (const card of foreignCards) {
+      const list = map.get(card.project_id)
+      if (list) list.push(card)
+      else map.set(card.project_id, [card])
+    }
+    return Array.from(map.entries())
+  }, [foreignCards])
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -201,25 +230,64 @@ export function TimelineView({ cards, onPatch, onDelete, onOpen, hoveredId, onHo
           </SortableContext>
         </div>
 
-        <div className="timeline-unassigned-label">пока вне сюжета</div>
-        <SortableContext items={[...unassigned.map((c) => c.id), UNASSIGNED_ZONE]} strategy={rectSortingStrategy}>
-          <DroppableZone id={UNASSIGNED_ZONE} className="timeline-unassigned-track">
-            {unassigned.length === 0 && (
-              <div className="timeline-empty-hint timeline-empty-hint--muted">Пусто — всё уже в сюжете</div>
-            )}
-            {unassigned.map((card) => (
-              <TimelineCard
-                key={card.id}
-                card={card}
-                onPatch={onPatch}
-                onDelete={onDelete}
-                onOpen={onOpen}
-                hoveredId={hoveredId}
-                onHover={onHover}
-              />
-            ))}
-          </DroppableZone>
-        </SortableContext>
+        <div className="timeline-lower">
+          <div className="timeline-unassigned-label">пока вне сюжета</div>
+          <SortableContext items={[...unassigned.map((c) => c.id), UNASSIGNED_ZONE]} strategy={rectSortingStrategy}>
+            <DroppableZone id={UNASSIGNED_ZONE} className="timeline-unassigned-track">
+              {unassigned.length === 0 && (
+                <div className="timeline-empty-hint timeline-empty-hint--muted">Пусто — всё уже в сюжете</div>
+              )}
+              {unassigned.map((card) => (
+                <TimelineCard
+                  key={card.id}
+                  card={card}
+                  onPatch={onPatch}
+                  onDelete={onDelete}
+                  onOpen={onOpen}
+                  hoveredId={hoveredId}
+                  onHover={onHover}
+                />
+              ))}
+            </DroppableZone>
+          </SortableContext>
+
+          {/* Cards from nested subgroups — read-only here (their own tabs
+              and reordering belong to their own project), grouped by
+              folder so the timeline shows the same structure the cloud
+              does. */}
+          {foreignGroups.length > 0 && (
+            <div className="timeline-structure">
+              <div className="timeline-structure-label">Из вложенных глав</div>
+              {foreignGroups.map(([projectId, groupCards]) => (
+                <div key={projectId} className="timeline-structure-group">
+                  <button
+                    type="button"
+                    className="timeline-structure-group-title"
+                    onClick={() => onNavigateToProject(projectId)}
+                  >
+                    {projectTitleById.get(projectId) ?? 'Без названия'}
+                  </button>
+                  <div className="timeline-structure-group-cards">
+                    {groupCards.map((card) => (
+                      <CardTile
+                        key={card.id}
+                        card={card}
+                        style={{ position: 'relative' }}
+                        readOnly
+                        className={`is-foreign ${hoveredId === card.id ? 'is-hovered' : ''}`}
+                        onStatusChange={() => {}}
+                        onDelete={() => {}}
+                        onOpen={() => onOpenForeign(card.project_id, card.id)}
+                        onHoverStart={() => onHover(card.id)}
+                        onHoverEnd={() => onHover(null)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       <DragOverlay>
