@@ -26,6 +26,7 @@ interface Props {
   initialOpenCardId?: string | null
   onConsumedInitialCard?: () => void
   onActiveCardChange?: (id: string | null) => void
+  onCompile: () => void
 }
 
 interface OpenTab {
@@ -49,6 +50,7 @@ export function BoardView({
   initialOpenCardId,
   onConsumedInitialCard,
   onActiveCardChange,
+  onCompile,
 }: Props) {
   const [openTabs, setOpenTabs] = useState<OpenTab[]>(() =>
     cards.length === 0 ? [{ key: makeTempKey(), cardId: null }] : [],
@@ -173,6 +175,14 @@ export function BoardView({
           onCloseCard={closeTab}
           onNewTab={openNewTab}
         />
+        <button
+          type="button"
+          className="pane-compile"
+          onClick={onCompile}
+          title="Собрать проект и все вложенные группы в один текстовый документ"
+        >
+          ⬇ Документ
+        </button>
       </div>
 
       <div className="board-body" ref={bodyRef}>

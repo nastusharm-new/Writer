@@ -4,6 +4,7 @@ import { useProjectTree } from './hooks/useProjectTree'
 import { useCards } from './hooks/useCards'
 import { useAllCards } from './hooks/useAllCards'
 import { collectDescendantIds } from './lib/projectTree'
+import { compileToText, downloadTextFile } from './lib/compile'
 import { dataStore } from './lib/dataStore'
 import { AuthScreen } from './components/AuthScreen'
 import { BoardView } from './components/BoardView'
@@ -80,6 +81,22 @@ function Workspace({ userId, onSignOut }: { userId: string; onSignOut: () => voi
     setPendingCardId(cardId)
   }
 
+  // Bundles the active project and everything nested under it into one
+  // plain-text document — fetches every card fresh rather than relying on
+  // the sidebar's snapshot, which excludes the active project's own cards.
+  const handleCompile = async () => {
+    const fresh = await dataStore.listCardsForUser(userId)
+    const cardsByProjectFresh = new Map<string, Card[]>()
+    for (const card of fresh) {
+      const list = cardsByProjectFresh.get(card.project_id)
+      if (list) list.push(card)
+      else cardsByProjectFresh.set(card.project_id, [card])
+    }
+    const text = compileToText(projects, cardsByProjectFresh, activeProjectId)
+    const title = projectTitleById.get(activeProjectId) ?? 'draft'
+    downloadTextFile(`${title}.txt`, text)
+  }
+
   // Dragging a card leaf onto a different project row in the sidebar.
   const handleMoveCard = async (cardId: string, sourceProjectId: string, targetProjectId: string) => {
     if (sourceProjectId === targetProjectId) return
@@ -125,6 +142,7 @@ function Workspace({ userId, onSignOut }: { userId: string; onSignOut: () => voi
             initialOpenCardId={pendingCardId}
             onConsumedInitialCard={() => setPendingCardId(null)}
             onActiveCardChange={setActiveCardId}
+            onCompile={handleCompile}
           />
         )}
       </main>
