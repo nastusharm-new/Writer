@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="ru" translate="no">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="google" content="notranslate" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;0,900;1,500;1,600&family=Lora:ital,wght@0,400;0,500;0,600;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <title>Draft — купить лицензию</title>
+    <style>
+      :root {
+        --text: #6b6154;
+        --text-h: #100d09;
+        --bg: #fbf8f1;
+        --card-bg: #fffdf7;
+        --border: #ddd6c4;
+        --card-border: #d8cfb8;
+        --accent: #8c2f2f;
+        --accent-bg: rgba(140, 47, 47, 0.08);
+        --shadow-print: 3px 3px 0 rgba(16, 13, 9, 0.08);
+        --shadow-print-lift: 4px 4px 0 rgba(16, 13, 9, 0.14);
+        --font-display: 'Playfair Display', Georgia, serif;
+        --serif: 'Lora', Georgia, 'Palatino Linotype', serif;
+        color-scheme: light dark;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --text: #b3aa98;
+          --text-h: #f4f0e6;
+          --bg: #17140f;
+          --card-bg: #221e17;
+          --border: #3a352a;
+          --card-border: #423c2e;
+          --accent: #e08a8a;
+          --accent-bg: rgba(224, 138, 138, 0.14);
+          --shadow-print: 3px 3px 0 rgba(0, 0, 0, 0.35);
+          --shadow-print-lift: 4px 4px 0 rgba(0, 0, 0, 0.45);
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font: 16px/155% var(--serif);
+      }
+      .wrap {
+        max-width: 720px;
+        margin: 0 auto;
+        padding: 56px 24px 96px;
+      }
+      .masthead {
+        text-align: center;
+        border-bottom: 3px double var(--border);
+        padding-bottom: 28px;
+        margin-bottom: 40px;
+      }
+      .masthead h1 {
+        font-family: var(--font-display);
+        font-size: 44px;
+        font-weight: 700;
+        margin: 0 0 8px;
+        color: var(--text-h);
+      }
+      .masthead p {
+        margin: 0;
+        font-style: italic;
+        color: var(--accent);
+      }
+      section {
+        margin-bottom: 40px;
+      }
+      h2 {
+        font-family: var(--font-display);
+        font-size: 22px;
+        color: var(--text-h);
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 8px;
+      }
+      ul {
+        padding-left: 20px;
+      }
+      li {
+        margin-bottom: 8px;
+      }
+      .card {
+        background: var(--card-bg);
+        border: 1px solid var(--card-border);
+        box-shadow: var(--shadow-print);
+        border-radius: 2px;
+        padding: 28px;
+      }
+      .price {
+        font-family: var(--font-display);
+        font-size: 36px;
+        color: var(--text-h);
+        margin: 0 0 4px;
+      }
+      .price-note {
+        font-size: 13px;
+        color: var(--text);
+        opacity: 0.8;
+        margin: 0 0 20px;
+      }
+      form {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      input[type='email'] {
+        flex: 1 1 220px;
+        font: 15px var(--serif);
+        padding: 12px 14px;
+        border: 1px solid var(--card-border);
+        border-radius: 2px;
+        background: var(--bg);
+        color: var(--text-h);
+      }
+      button {
+        font-family: var(--font-display);
+        font-weight: 600;
+        font-size: 15px;
+        padding: 12px 22px;
+        border: none;
+        border-radius: 2px;
+        background: var(--accent);
+        color: var(--card-bg);
+        cursor: pointer;
+        box-shadow: var(--shadow-print);
+      }
+      button:hover {
+        box-shadow: var(--shadow-print-lift);
+      }
+      button:disabled {
+        opacity: 0.6;
+        cursor: default;
+      }
+      .hint {
+        font-size: 13px;
+        margin-top: 12px;
+        color: var(--text);
+      }
+      .hint--error {
+        color: var(--accent);
+      }
+      .foot {
+        text-align: center;
+        font-size: 13px;
+        color: var(--text);
+        opacity: 0.7;
+        margin-top: 56px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="masthead">
+        <h1>Draft</h1>
+        <p>Приложение для писателей, которые думают фрагментами</p>
+      </header>
+
+      <section>
+        <h2>Что это</h2>
+        <p>
+          Draft — программа для Windows и Mac, в которой черновик собирается не сплошным текстом, а карточками:
+          мысль, сцена, реплика, набросок — что угодно, в любом порядке. Три способа посмотреть на них целиком:
+          <strong>облако</strong> связей между карточками, <strong>таймлайн</strong> последовательности и
+          <strong>текст</strong> — уже собранная рукопись. Готовое можно выгрузить в Markdown, Word или PDF.
+        </p>
+        <ul>
+          <li>Работает полностью локально — все черновики хранятся на вашем компьютере</li>
+          <li>Никаких подписок: один платёж — лицензия навсегда</li>
+          <li>Активация офлайн, ключом — интернет для работы не нужен</li>
+        </ul>
+      </section>
+
+      <section>
+        <h2>Купить</h2>
+        <div class="card">
+          <p class="price" id="price">…</p>
+          <p class="price-note">Один платёж, лицензия на одного пользователя и один компьютер</p>
+          <form id="buy-form">
+            <input type="email" id="email" placeholder="ваш@email.ru" required autocomplete="email" />
+            <button type="submit" id="submit-btn">Купить</button>
+          </form>
+          <p class="hint" id="hint">Ключ активации придёт на почту сразу после оплаты через ЮKassa.</p>
+        </div>
+      </section>
+
+      <p class="foot">
+        Уже купили? Ключ и ссылки на установку — в письме от нас.<br />
+        Хотите просто попробовать в браузере — <a href="/" style="color: var(--accent)">веб-версия здесь</a>.
+      </p>
+    </div>
+
+    <script>
+      const priceEl = document.getElementById('price')
+      const form = document.getElementById('buy-form')
+      const emailInput = document.getElementById('email')
+      const submitBtn = document.getElementById('submit-btn')
+      const hint = document.getElementById('hint')
+      const defaultHint = hint.textContent
+
+      fetch('/api/pricing')
+        .then((r) => r.json())
+        .then(({ value, currency }) => {
+          const amount = Math.round(parseFloat(value))
+          const formatted = new Intl.NumberFormat('ru-RU', { style: 'currency', currency, maximumFractionDigits: 0 }).format(
+            amount,
+          )
+          priceEl.textContent = formatted
+        })
+        .catch(() => {
+          priceEl.textContent = '—'
+        })
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault()
+        hint.textContent = defaultHint
+        hint.classList.remove('hint--error')
+        submitBtn.disabled = true
+        submitBtn.textContent = '…'
+        try {
+          const res = await fetch('/api/create-payment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: emailInput.value.trim() }),
+          })
+          if (!res.ok) throw new Error('request failed')
+          const { confirmationUrl } = await res.json()
+          window.location.href = confirmationUrl
+        } catch {
+          hint.textContent = 'Не получилось начать оплату — проверьте почту и попробуйте ещё раз.'
+          hint.classList.add('hint--error')
+          submitBtn.disabled = false
+          submitBtn.textContent = 'Купить'
+        }
+      })
+    </script>
+  </body>
+</html>

@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="ru" translate="no">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700&family=Lora:ital,wght@0,400"
+      rel="stylesheet"
+    />
+    <title>Draft — спасибо за покупку</title>
+    <style>
+      :root {
+        --text: #6b6154;
+        --text-h: #100d09;
+        --bg: #fbf8f1;
+        --accent: #8c2f2f;
+        --font-display: 'Playfair Display', Georgia, serif;
+        --serif: 'Lora', Georgia, serif;
+        color-scheme: light dark;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --text: #b3aa98;
+          --text-h: #f4f0e6;
+          --bg: #17140f;
+          --accent: #e08a8a;
+        }
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--bg);
+        color: var(--text);
+        font: 17px/155% var(--serif);
+        text-align: center;
+      }
+      .box {
+        max-width: 480px;
+        padding: 24px;
+      }
+      h1 {
+        font-family: var(--font-display);
+        color: var(--text-h);
+        font-size: 30px;
+      }
+      a {
+        color: var(--accent);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="box">
+      <h1>Спасибо!</h1>
+      <p>
+        Оплата принята. Письмо с лицензионным ключом и ссылками на установку для Windows и Mac придёт на почту в
+        течение нескольких минут.
+      </p>
+      <p>Не пришло — проверьте папку «Спам», или напишите нам, указав почту, на которую покупали.</p>
+      <p><a href="/buy.html">Назад на страницу покупки</a></p>
+    </div>
+  </body>
+</html>
