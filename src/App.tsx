@@ -12,6 +12,7 @@ import { manuscriptFromProjects } from './lib/manuscript'
 import { getSequence, getUnassigned } from './lib/timeline'
 import { dataStore } from './lib/dataStore'
 import { getActiveLicense } from './lib/license'
+import { applyProjectTemplate, PROJECT_TEMPLATES } from './lib/templates'
 import { AuthScreen } from './components/AuthScreen'
 import { LicenseGate } from './components/LicenseGate'
 import { BoardView } from './components/BoardView'
@@ -178,6 +179,17 @@ function Workspace({ userId, onSignOut }: { userId: string; onSignOut: () => voi
     moveProject(projectId, targetParentId)
   }
 
+  // Builds a whole template (folders + example cards) under `parentId` —
+  // the cards go straight through dataStore rather than useCards, so the
+  // sidebar's own snapshot needs an explicit refetch once it's done.
+  const handleApplyTemplate = async (parentId: string | null, templateId: string, variantId: string) => {
+    const template = PROJECT_TEMPLATES.find((t) => t.id === templateId)
+    if (!template) return
+    const root = await applyProjectTemplate(parentId, template, variantId, addProject)
+    if (root) setActiveProjectId(root.id)
+    refetchAllCards()
+  }
+
   // Dragging a card leaf onto a different project row in the sidebar.
   const handleMoveCard = async (cardId: string, sourceProjectId: string, targetProjectId: string) => {
     if (sourceProjectId === targetProjectId) return
@@ -242,6 +254,7 @@ function Workspace({ userId, onSignOut }: { userId: string; onSignOut: () => voi
         onMoveProject={handleMoveProject}
         onReorderCard={handleReorderCard}
         onAddChild={(parentId) => addProject(parentId, 'Без названия')}
+        onApplyTemplate={handleApplyTemplate}
         onRename={renameProject}
         onDelete={deleteProject}
         onSignOut={onSignOut}

@@ -12,6 +12,7 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from '@dnd-kit/core'
+import { NewProjectMenu } from './NewProjectMenu'
 import { ProjectTreeItem } from './ProjectTreeItem'
 import { cardTabTitle } from '../lib/timeline'
 import { daysRemaining, getActiveLicense } from '../lib/license'
@@ -45,6 +46,7 @@ interface Props {
   // "somewhere in this project" a drop on the project row itself gives.
   onReorderCard: (cardId: string, sourceProjectId: string, targetProjectId: string, targetCardId: string) => void
   onAddChild: (parentId: string | null) => void
+  onApplyTemplate: (parentId: string | null, templateId: string, variantId: string) => void
   onRename: (id: string, title: string) => void
   onDelete: (id: string) => void
   onSignOut: () => void
@@ -67,6 +69,7 @@ export function Sidebar({
   onMoveProject,
   onReorderCard,
   onAddChild,
+  onApplyTemplate,
   onRename,
   onDelete,
   onSignOut,
@@ -172,15 +175,14 @@ export function Sidebar({
       <aside className="sidebar">
         <div className="sidebar-header">
           <span className="sidebar-title">Draft</span>
-          <button
-            type="button"
+          <NewProjectMenu
+            parentId={null}
+            onCreateBlank={onAddChild}
+            onApplyTemplate={onApplyTemplate}
             className="sidebar-add-root"
-            onClick={() => onAddChild(null)}
-            aria-label="Новый проект"
+            label="+"
             title="Новый проект"
-          >
-            +
-          </button>
+          />
         </div>
 
         <div className="sidebar-tree">
@@ -197,6 +199,7 @@ export function Sidebar({
               onSelect={onSelect}
               onSelectCard={onSelectCard}
               onAddChild={onAddChild}
+              onApplyTemplate={onApplyTemplate}
               onRename={onRename}
               onDelete={onDelete}
             />

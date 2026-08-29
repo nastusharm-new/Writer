@@ -3,6 +3,7 @@ import type { KeyboardEvent } from 'react'
 import { useDraggable, useDroppable } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import type { ProjectTreeNode } from '../hooks/useProjectTree'
+import { NewProjectMenu } from './NewProjectMenu'
 import { TreeCardLeaf } from './TreeCardLeaf'
 import { getSequence, getUnassigned } from '../lib/timeline'
 import type { Card } from '../types'
@@ -18,6 +19,7 @@ interface Props {
   onSelect: (id: string) => void
   onSelectCard: (projectId: string, cardId: string) => void
   onAddChild: (parentId: string) => void
+  onApplyTemplate: (parentId: string | null, templateId: string, variantId: string) => void
   onRename: (id: string, title: string) => void
   onDelete: (id: string) => void
 }
@@ -38,6 +40,7 @@ export function ProjectTreeItem({
   onSelect,
   onSelectCard,
   onAddChild,
+  onApplyTemplate,
   onRename,
   onDelete,
 }: Props) {
@@ -144,18 +147,20 @@ export function ProjectTreeItem({
         )}
 
         <span className="tree-row-actions">
-          <button
-            type="button"
-            className="tree-action"
-            title="Добавить внутрь"
-            onClick={(e) => {
-              e.stopPropagation()
-              onAddChild(node.project.id)
+          <NewProjectMenu
+            parentId={node.project.id}
+            onCreateBlank={(parentId) => {
+              if (parentId) onAddChild(parentId)
               if (!isOpen) onToggle(node.project.id)
             }}
-          >
-            +
-          </button>
+            onApplyTemplate={(parentId, templateId, variantId) => {
+              onApplyTemplate(parentId, templateId, variantId)
+              if (!isOpen) onToggle(node.project.id)
+            }}
+            className="tree-action"
+            label="+"
+            title="Добавить внутрь"
+          />
           <button
             type="button"
             className="tree-action tree-action-delete"
@@ -204,6 +209,7 @@ export function ProjectTreeItem({
               onSelect={onSelect}
               onSelectCard={onSelectCard}
               onAddChild={onAddChild}
+              onApplyTemplate={onApplyTemplate}
               onRename={onRename}
               onDelete={onDelete}
             />
