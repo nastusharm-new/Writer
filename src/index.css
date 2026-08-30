@@ -190,6 +190,27 @@ select {
   border-bottom: 1px solid var(--border);
 }
 
+.card-pane-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.card-pane-preview-toggle {
+  border: none;
+  background: none;
+  color: var(--text);
+  opacity: 0.6;
+  font-family: var(--font-display);
+  font-size: 13px;
+  padding: 6px 8px;
+}
+
+.card-pane-preview-toggle:hover {
+  opacity: 1;
+  color: var(--accent);
+}
+
 .card-pane-delete {
   border: none;
   background: none;
@@ -240,6 +261,23 @@ select {
 
 .card-pane-textarea:focus {
   outline: none;
+}
+
+.card-pane-preview {
+  flex: 1;
+  width: 100%;
+  max-width: 640px;
+  padding: 28px 0 40px;
+  cursor: text;
+}
+
+.card-pane-preview-text {
+  font-family: var(--serif);
+  font-size: 19px;
+  line-height: 170%;
+  color: var(--text-h);
+  white-space: pre-wrap;
+  margin: 0;
 }
 
 .card-pane-body.is-drag-over {
@@ -1512,4 +1550,97 @@ select {
 
 .text-paragraph:first-of-type {
   text-indent: 0;
+}
+
+/* A recipe-shaped card (lib/recipeFormat.ts) laid out as its own boxed
+   card rather than a run of prose — used in the Текст view and in the
+   card pane's own preview toggle. */
+.recipe-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--shadow-print);
+  border-radius: 2px;
+  padding: 28px 32px;
+  margin-bottom: 1.4em;
+  max-width: 640px;
+}
+
+.recipe-card-title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text-h);
+  margin: 0 0 4px;
+}
+
+.recipe-card-meta {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 14px;
+  color: var(--text);
+  opacity: 0.75;
+  margin: 0;
+}
+
+.recipe-card-heading {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  border-bottom: 1px solid var(--accent-border);
+  padding-bottom: 4px;
+  margin: 20px 0 10px;
+}
+
+.recipe-card-heading:first-of-type {
+  margin-top: 18px;
+}
+
+.recipe-card-ingredients,
+.recipe-card-steps {
+  margin: 0;
+  padding-left: 0;
+  list-style: none;
+}
+
+.recipe-card-ingredients li {
+  font-family: var(--serif);
+  font-size: 15.5px;
+  line-height: 165%;
+  color: var(--text-h);
+  padding-left: 18px;
+  position: relative;
+}
+
+.recipe-card-ingredients li::before {
+  content: '—';
+  position: absolute;
+  left: 0;
+  color: var(--accent);
+}
+
+.recipe-card-steps {
+  counter-reset: step;
+}
+
+.recipe-card-steps li {
+  font-family: var(--serif);
+  font-size: 15.5px;
+  line-height: 165%;
+  color: var(--text-h);
+  padding-left: 28px;
+  position: relative;
+  margin-bottom: 6px;
+  counter-increment: step;
+}
+
+.recipe-card-steps li::before {
+  content: counter(step) '.';
+  position: absolute;
+  left: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--accent);
 }

@@ -1,4 +1,6 @@
 import type { ManuscriptSection } from '../lib/manuscript'
+import { parseRecipeCard } from '../lib/recipeFormat'
+import { RecipeCard } from './RecipeCard'
 
 interface Props {
   sections: ManuscriptSection[]
@@ -26,11 +28,16 @@ export function TextView({ sections }: Props) {
                   >
                     {section.title}
                   </h2>
-                  {section.cards.map((card) => (
-                    <p key={card.id} className="text-paragraph">
-                      {card.text}
-                    </p>
-                  ))}
+                  {section.cards.map((card) => {
+                    const recipe = parseRecipeCard(card.text)
+                    return recipe ? (
+                      <RecipeCard key={card.id} recipe={recipe} />
+                    ) : (
+                      <p key={card.id} className="text-paragraph">
+                        {card.text}
+                      </p>
+                    )
+                  })}
                 </section>
               ),
           )

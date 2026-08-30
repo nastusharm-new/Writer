@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ClipboardEvent, DragEvent } from 'react'
 import { StatusPicker } from './StatusPicker'
+import { RecipeCard } from './RecipeCard'
 import { fileToDataUri } from '../lib/images'
+import { parseRecipeCard } from '../lib/recipeFormat'
 import type { Card, CardStatus } from '../types'
 import type { CardPatch } from '../lib/dataStore'
 
@@ -34,6 +36,12 @@ export function CardTabPane({ card, onCreate, onPatch, onDelete, onCreated }: Pr
   const [status, setStatus] = useState<CardStatus>(card?.status ?? 'spark')
   const [images, setImages] = useState<string[]>(card?.images ?? [])
   const [isDragOver, setIsDragOver] = useState(false)
+  // A formatted, read-only view of the same text — useful for a card
+  // written in a known shape (right now, just recipes; see
+  // lib/recipeFormat.ts) that reads better laid out than as raw text.
+  // Explicit toggle rather than switching on blur: much simpler to get
+  // right than reconciling with the autosave/cursor logic below.
+  const [previewMode, setPreviewMode] = useState(false)
   const idRef = useRef<string | null>(card?.id ?? null)
   // Mirrors of the latest state, so the unmount-flush below (which only
   // ever runs once, on this tab's own unmount) never reads a stale value.
@@ -88,6 +96,32 @@ export function CardTabPane({ card, onCreate, onPatch, onDelete, onCreated }: Pr
       }
     }
   }, [])
+
+  // Coming back from preview mode into the textarea should land the
+  // cursor at the end, same reasoning as the mount effect above — this
+  // one just also fires on the preview -> edit transition, not only on
+  // mount.
+  useEffect(() => {
+    if (previewMode) return
+    const el = textareaRef.current
+    if (el) {
+      el.focus()
+      const end = el.value.length
+      el.setSelectionRange(end, end)
+    }
+  }, [previewMode])
+
+  const togglePreview = () => {
+    if (!previewMode && saveTimer.current) {
+      // Flush the pending autosave immediately rather than leaving it
+      // debounced — switching to preview is a natural "I'm done typing
+      // for now" moment.
+      clearTimeout(saveTimer.current)
+      saveTimer.current = null
+      commit()
+    }
+    setPreviewMode((v) => !v)
+  }
 
   const handleTextChange = (value: string) => {
     setText(value)
@@ -172,16 +206,24 @@ export function CardTabPane({ card, onCreate, onPatch, onDelete, onCreated }: Pr
   }
 
   const isEmpty = !text.trim()
+  const recipe = !isEmpty && previewMode ? parseRecipeCard(text) : null
 
   return (
     <div className="card-pane">
       <div className="card-pane-topbar">
         <StatusPicker value={status} onChange={handleStatusChange} />
-        {idRef.current && (
-          <button type="button" className="card-pane-delete" onClick={handleDelete}>
-            Удалить
-          </button>
-        )}
+        <div className="card-pane-topbar-actions">
+          {!isEmpty && (
+            <button type="button" className="card-pane-preview-toggle" onClick={togglePreview}>
+              {previewMode ? 'Редактировать' : 'Просмотр'}
+            </button>
+          )}
+          {idRef.current && (
+            <button type="button" className="card-pane-delete" onClick={handleDelete}>
+              Удалить
+            </button>
+          )}
+        </div>
       </div>
 
       <div
@@ -213,14 +255,20 @@ export function CardTabPane({ card, onCreate, onPatch, onDelete, onCreated }: Pr
             ))}
           </div>
         )}
-        <textarea
-          ref={textareaRef}
-          className="card-pane-textarea"
-          value={text}
-          onChange={(e) => handleTextChange(e.target.value)}
-          onPaste={handlePaste}
-          placeholder="Мысль, сцена, факт, кусок диалога, шаг рецепта — что угодно… Изображение можно вставить (Ctrl+V) или перетащить сюда."
-        />
+        {previewMode && !isEmpty ? (
+          <div className="card-pane-preview" onClick={togglePreview} title="Нажмите, чтобы редактировать">
+            {recipe ? <RecipeCard recipe={recipe} /> : <p className="card-pane-preview-text">{text}</p>}
+          </div>
+        ) : (
+          <textarea
+            ref={textareaRef}
+            className="card-pane-textarea"
+            value={text}
+            onChange={(e) => handleTextChange(e.target.value)}
+            onPaste={handlePaste}
+            placeholder="Мысль, сцена, факт, кусок диалога, шаг рецепта — что угодно… Изображение можно вставить (Ctrl+V) или перетащить сюда."
+          />
+        )}
       </div>
     </div>
   )
