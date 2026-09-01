@@ -53,6 +53,9 @@ interface Props {
   // instead of always landing back on Cloud.
   viewMode: 'cloud' | 'timeline' | 'text'
   onViewModeChange: (mode: 'cloud' | 'timeline' | 'text') => void
+  // Opens the sidebar drawer — only rendered as a visible button under the
+  // narrow-screen breakpoint (see .sidebar-menu-toggle in index.css).
+  onToggleSidebar: () => void
 }
 
 interface OpenTab {
@@ -85,6 +88,7 @@ export function BoardView({
   onNavigateToProject,
   viewMode,
   onViewModeChange,
+  onToggleSidebar,
 }: Props) {
   // No auto-opened blank tab on an empty project — landing on a fresh
   // project (the root one especially) should show its (empty) Cloud or
@@ -287,6 +291,15 @@ export function BoardView({
   return (
     <div className="board">
       <div className="pane-breadcrumb">
+        <button
+          type="button"
+          className="sidebar-menu-toggle"
+          onClick={onToggleSidebar}
+          aria-label="Открыть список проектов"
+          title="Открыть список проектов"
+        >
+          ☰
+        </button>
         {breadcrumbPath.map((title, i) => (
           <span key={i} className="pane-breadcrumb-item">
             {i > 0 && <span className="pane-breadcrumb-sep">›</span>}

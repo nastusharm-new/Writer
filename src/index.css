@@ -347,6 +347,54 @@ select {
   border-right: 1px solid var(--border);
 }
 
+/* Off-canvas drawer, but only below the breakpoint (iPad portrait and
+   narrower) — above it these two rules do nothing, .sidebar stays the
+   plain always-visible column above, and .sidebar-menu-toggle stays
+   hidden so there's no button that would open a drawer that isn't one. */
+.sidebar-backdrop {
+  display: none;
+}
+
+.sidebar-menu-toggle {
+  display: none;
+  border: none;
+  background: none;
+  color: var(--text-h);
+  font-size: 18px;
+  line-height: 1;
+  padding: 6px 8px;
+  margin-right: 2px;
+}
+
+@media (max-width: 880px) {
+  .sidebar-menu-toggle {
+    display: inline-flex;
+  }
+
+  .sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: 82vw;
+    max-width: 320px;
+    z-index: 50;
+    transform: translateX(-100%);
+    transition: transform 0.22s ease;
+    box-shadow: var(--shadow-print-lift);
+  }
+
+  .sidebar.is-open {
+    transform: translateX(0);
+  }
+
+  .sidebar-backdrop.is-visible {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(16, 13, 9, 0.35);
+    z-index: 40;
+  }
+}
+
 .sidebar-header {
   display: flex;
   align-items: center;
@@ -552,6 +600,23 @@ select {
   height: 18px;
   border-radius: 4px;
   line-height: 1;
+}
+
+/* Touch has no :hover — without this, the two buttons above are simply
+   unreachable (permanently display:none) on iPad/phone. Also sized up a
+   bit past the mouse version's 18px, since a fingertip needs more room
+   than a cursor does. */
+@media (hover: none) {
+  .tree-row-actions {
+    display: flex;
+  }
+
+  .tree-action {
+    width: 30px;
+    height: 30px;
+    font-size: 15px;
+    opacity: 0.7;
+  }
 }
 
 .tree-action:hover {
@@ -1643,4 +1708,48 @@ select {
   font-family: var(--font-display);
   font-weight: 700;
   color: var(--accent);
+}
+
+/* ---------- Touch (iPad and phones) ----------
+   Everything above was sized for a mouse cursor. `(hover: none)` is true
+   on touch-primary devices (no fine pointer that can hover) and false for
+   a mouse or trackpad, so this only ever applies where a fingertip is the
+   input — a handful of small icon buttons get more room, and a double-tap
+   target gets `touch-action: manipulation` so the browser's own
+   double-tap-to-zoom doesn't eat the tap before our handler sees it.
+   Placed last in the file so it wins over the plain-mouse sizing above it
+   (same selector specificity — CSS falls back to source order). */
+@media (hover: none) {
+  .sidebar-add-root,
+  .tab-close,
+  .tab-new {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
+  }
+
+  .card-tile-delete {
+    padding: 6px 8px;
+    opacity: 0.6;
+  }
+
+  .card-pane-image-remove {
+    width: 26px;
+    height: 26px;
+  }
+
+  .archive-item-destroy,
+  .archive-item-restore {
+    padding: 8px 6px;
+  }
+
+  .status-picker-dot {
+    padding: 10px 12px 10px 8px;
+  }
+
+  .card-tile,
+  .status-sticker,
+  .tree-toggle {
+    touch-action: manipulation;
+  }
 }

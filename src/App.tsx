@@ -84,6 +84,10 @@ function Workspace({ userId, onSignOut }: { userId: string; onSignOut: () => voi
   // cloud hub, timeline structure link) keeps the current view instead of
   // always landing back on Cloud.
   const [viewMode, setViewMode] = useState<'cloud' | 'timeline' | 'text'>('cloud')
+  // Off-canvas on narrow screens (iPad portrait and below — see the
+  // breakpoint in index.css); inert everywhere wider, where the sidebar
+  // is just always visible as before.
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   // The active project's cloud aggregates every nested subgroup's cards
   // too (a "часть" or "сцена" is a project of its own, but its cards still
@@ -136,6 +140,20 @@ function Workspace({ userId, onSignOut }: { userId: string; onSignOut: () => voi
   const handleSelectCard = (projectId: string, cardId: string) => {
     if (projectId !== activeProjectId) setActiveProjectId(projectId)
     setPendingCardId(cardId)
+  }
+
+  // Sidebar-only wrappers: picking a project or a card closes the drawer
+  // on narrow screens (a no-op everywhere the sidebar isn't a drawer).
+  // BoardView's own navigation (e.g. a foreign card in the aggregated
+  // cloud) goes through handleSelectCard directly — the sidebar is
+  // already out of the way at that point.
+  const selectProjectFromSidebar = (id: string) => {
+    setActiveProjectId(id)
+    setSidebarOpen(false)
+  }
+  const selectCardFromSidebar = (projectId: string, cardId: string) => {
+    handleSelectCard(projectId, cardId)
+    setSidebarOpen(false)
   }
 
   // Bundles the active project and everything nested under it into one
@@ -248,8 +266,8 @@ function Workspace({ userId, onSignOut }: { userId: string; onSignOut: () => voi
         activeCardId={activeCardId}
         activeAncestorIds={activeAncestorIds}
         projectTitleById={projectTitleById}
-        onSelect={setActiveProjectId}
-        onSelectCard={handleSelectCard}
+        onSelect={selectProjectFromSidebar}
+        onSelectCard={selectCardFromSidebar}
         onMoveCard={handleMoveCard}
         onMoveProject={handleMoveProject}
         onReorderCard={handleReorderCard}
@@ -258,6 +276,8 @@ function Workspace({ userId, onSignOut }: { userId: string; onSignOut: () => voi
         onRename={renameProject}
         onDelete={deleteProject}
         onSignOut={onSignOut}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
       />
       <main className="app-main">
         {cardsLoading ? (
@@ -285,6 +305,7 @@ function Workspace({ userId, onSignOut }: { userId: string; onSignOut: () => voi
             onNavigateToProject={setActiveProjectId}
             viewMode={viewMode}
             onViewModeChange={setViewMode}
+            onToggleSidebar={() => setSidebarOpen((v) => !v)}
           />
         )}
       </main>

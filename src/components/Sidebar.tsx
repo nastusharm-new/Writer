@@ -50,6 +50,11 @@ interface Props {
   onRename: (id: string, title: string) => void
   onDelete: (id: string) => void
   onSignOut: () => void
+  // Off-canvas drawer state — only actually a drawer under the narrow
+  // (iPad-portrait-and-below) breakpoint in CSS; outside it, these are
+  // inert (the sidebar just stays put, same as before this existed).
+  isOpen: boolean
+  onClose: () => void
 }
 
 // The left-hand project tree, Obsidian-style: an unbounded nesting of
@@ -73,6 +78,8 @@ export function Sidebar({
   onRename,
   onDelete,
   onSignOut,
+  isOpen,
+  onClose,
 }: Props) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [trialLeft] = useState(trialDaysLeft)
@@ -172,7 +179,11 @@ export function Sidebar({
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <aside className="sidebar">
+      {/* Only rendered visibly under the narrow-screen breakpoint (see
+          .sidebar-backdrop in index.css) — a plain click-away-to-close
+          layer behind the drawer. */}
+      <div className={`sidebar-backdrop ${isOpen ? 'is-visible' : ''}`} onClick={onClose} />
+      <aside className={`sidebar ${isOpen ? 'is-open' : ''}`}>
         <div className="sidebar-header">
           <span className="sidebar-title">Draft</span>
           <NewProjectMenu
